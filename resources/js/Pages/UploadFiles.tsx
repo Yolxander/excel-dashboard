@@ -1,12 +1,138 @@
-import React from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useState, useRef } from 'react';
+import { Head, router } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Plus, MoreHorizontal } from 'lucide-react';
+import { Upload, FileText, Plus, MoreHorizontal, Trash2, Download, Eye, RefreshCw } from 'lucide-react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 
-export default function UploadFiles() {
+interface UploadedFile {
+    id: number;
+    original_filename: string;
+    file_type: string;
+    file_size: number;
+    status: 'processing' | 'completed' | 'failed';
+    processed_data?: {
+        headers: string[];
+        data: any[];
+        total_rows: number;
+        total_columns: number;
+    };
+    error_message?: string;
+    created_at: string;
+    formatted_file_size?: string;
+}
+
+interface UploadFilesProps {
+    uploadedFiles: UploadedFile[];
+}
+
+export default function UploadFiles({ uploadedFiles }: UploadFilesProps) {
+    const [isDragging, setIsDragging] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            uploadFile(files[0]);
+        }
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            uploadFile(files[0]);
+        }
+    };
+
+    const uploadFile = async (file: File) => {
+        if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
+            alert('Please select a valid Excel or CSV file');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) { // 10MB
+            alert('File size must be less than 10MB');
+            return;
+        }
+
+        setUploading(true);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            await router.post('/upload-files', formData, {
+                onSuccess: () => {
+                    setUploading(false);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
+                },
+                onError: (errors) => {
+                    setUploading(false);
+                    alert('Upload failed: ' + Object.values(errors).join(', '));
+                }
+            });
+        } catch (error) {
+            setUploading(false);
+            alert('Upload failed');
+        }
+    };
+
+    const deleteFile = async (id: number) => {
+        if (confirm('Are you sure you want to delete this file?')) {
+            await router.delete(`/upload-files/${id}`);
+        }
+    };
+
+    const refreshFiles = async () => {
+        setRefreshing(true);
+        await router.reload();
+        setRefreshing(false);
+    };
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return <Badge variant="default">Completed</Badge>;
+            case 'processing':
+                return <Badge variant="secondary">Processing</Badge>;
+            case 'failed':
+                return <Badge variant="destructive">Failed</Badge>;
+            default:
+                return <Badge variant="secondary">{status}</Badge>;
+        }
+    };
+
+    const getFileIcon = (fileType: string) => {
+        switch (fileType.toLowerCase()) {
+            case 'xlsx':
+                return <FileText className="h-8 w-8 text-green-500" />;
+            case 'xls':
+                return <FileText className="h-8 w-8 text-blue-500" />;
+            case 'csv':
+                return <FileText className="h-8 w-8 text-orange-500" />;
+            default:
+                return <FileText className="h-8 w-8 text-gray-500" />;
+        }
+    };
+
     return (
         <>
             <Head title="Upload Excel Files - Excel Dashboard" />
@@ -15,90 +141,110 @@ export default function UploadFiles() {
                 title="Upload Excel Files"
                 description="Upload and process your Excel files to generate dashboards"
             >
-                <div className="flex justify-end mb-6">
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Files
+                <div className="flex justify-between items-center mb-6">
+                    <div></div>
+                    <Button
+                        variant="outline"
+                        onClick={refreshFiles}
+                        disabled={refreshing}
+                    >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                        {refreshing ? 'Refreshing...' : 'Refresh'}
                     </Button>
                 </div>
-                    <div className="space-y-6">
-                        {/* Upload Area */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Upload Files</CardTitle>
-                                <CardDescription>Drag and drop Excel files here or click to browse</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-lg font-medium text-gray-900 mb-2">Drop files here</p>
-                                    <p className="text-gray-500 mb-4">Supports .xlsx, .xls, .csv files up to 10MB</p>
-                                    <Button variant="outline">
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        Choose Files
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                <div className="space-y-6">
+                    {/* Upload Area */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Upload Files</CardTitle>
+                            <CardDescription>Drag and drop Excel files here or click to browse</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div
+                                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                                    isDragging
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                            >
+                                <Upload className={`h-12 w-12 mx-auto mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+                                <p className="text-lg font-medium text-gray-900 mb-2">
+                                    {uploading ? 'Uploading...' : 'Drop files here'}
+                                </p>
+                                <p className="text-gray-500 mb-4">Supports .xlsx, .xls, .csv files up to 10MB</p>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    {uploading ? 'Uploading...' : 'Choose Files'}
+                                </Button>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".xlsx,.xls,.csv"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        {/* File List */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Uploaded Files</CardTitle>
-                                <CardDescription>Files that have been processed</CardDescription>
-                            </CardHeader>
-                            <CardContent>
+                    {/* File List */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Uploaded Files</CardTitle>
+                            <CardDescription>Files that have been processed</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {uploadedFiles.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                    <p>No files uploaded yet</p>
+                                </div>
+                            ) : (
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div className="flex items-center space-x-4">
-                                            <FileText className="h-8 w-8 text-blue-500" />
-                                            <div>
-                                                <p className="font-medium">Sales_Data_Sample.xlsx</p>
-                                                <p className="text-sm text-gray-500">6.3 KB • Uploaded 2 hours ago</p>
+                                    {uploadedFiles.map((file) => (
+                                        <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                            <div className="flex items-center space-x-4">
+                                                {getFileIcon(file.file_type)}
+                                                <div>
+                                                    <p className="font-medium">{file.original_filename}</p>
+                                                    <p className="text-sm text-gray-500">
+                                                        {file.file_size ? `${(file.file_size / 1024).toFixed(1)} KB` : 'Unknown size'} •
+                                                        Uploaded {new Date(file.created_at).toLocaleDateString()}
+                                                        {file.processed_data && (
+                                                            <span> • {file.processed_data.total_rows} rows, {file.processed_data.total_columns} columns</span>
+                                                        )}
+                                                    </p>
+                                                    {file.error_message && (
+                                                        <p className="text-sm text-red-500 mt-1">{file.error_message}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                {getStatusBadge(file.status)}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => deleteFile(file.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Badge variant="default">Processed</Badge>
-                                            <Button variant="ghost" size="sm">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div className="flex items-center space-x-4">
-                                            <FileText className="h-8 w-8 text-green-500" />
-                                            <div>
-                                                <p className="font-medium">Recruiter_Performance.csv</p>
-                                                <p className="text-sm text-gray-500">245 B • Uploaded 1 day ago</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Badge variant="default">Processed</Badge>
-                                            <Button variant="ghost" size="sm">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div className="flex items-center space-x-4">
-                                            <FileText className="h-8 w-8 text-yellow-500" />
-                                            <div>
-                                                <p className="font-medium">Q4_Financial_Report.xlsx</p>
-                                                <p className="text-sm text-gray-500">2.1 MB • Uploaded 3 days ago</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Badge variant="secondary">Processing</Badge>
-                                            <Button variant="ghost" size="sm">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
-                            </CardContent>
-                        </Card>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                        {/* Processing Status */}
+                    {/* Processing Status */}
+                    {uploadedFiles.some(f => f.status === 'processing') && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Processing Status</CardTitle>
@@ -106,25 +252,23 @@ export default function UploadFiles() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                            <span className="text-sm font-medium">Q4_Financial_Report.xlsx</span>
-                                        </div>
-                                        <span className="text-sm text-gray-600">Processing... 75%</span>
-                                    </div>
-                                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                            <span className="text-sm font-medium">Sales_Data_Sample.xlsx</span>
-                                        </div>
-                                        <span className="text-sm text-gray-600">Completed</span>
-                                    </div>
+                                    {uploadedFiles
+                                        .filter(f => f.status === 'processing')
+                                        .map((file) => (
+                                            <div key={file.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                    <span className="text-sm font-medium">{file.original_filename}</span>
+                                                </div>
+                                                <span className="text-sm text-gray-600">Processing...</span>
+                                            </div>
+                                        ))}
                                 </div>
                             </CardContent>
                         </Card>
-                    </div>
-                </DashboardLayout>
-            </>
-        );
-    }
+                    )}
+                </div>
+            </DashboardLayout>
+        </>
+    );
+}

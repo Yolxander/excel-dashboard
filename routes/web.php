@@ -9,6 +9,8 @@ use App\Http\Controllers\SyncScheduleController;
 
 Route::get('/', [DashboardController::class, 'index']);
 Route::get('/upload-files', [UploadFilesController::class, 'index']);
+Route::post('/upload-files', [UploadFilesController::class, 'store']);
+Route::delete('/upload-files/{id}', [UploadFilesController::class, 'destroy']);
 Route::get('/connected-files', [ConnectedFilesController::class, 'index']);
 Route::get('/data-sources', [DataSourcesController::class, 'index']);
 Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);

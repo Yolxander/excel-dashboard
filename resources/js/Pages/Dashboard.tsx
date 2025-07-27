@@ -1,5 +1,5 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,9 +45,10 @@ interface DashboardProps {
         status: string;
         date: string;
     }>;
+    connectedFile?: string;
 }
 
-export default function Dashboard({ stats, recentOrders }: DashboardProps) {
+export default function Dashboard({ stats, recentOrders, connectedFile }: DashboardProps) {
     const kpiCards = [
         {
             title: 'Total Sales',
@@ -87,10 +88,25 @@ export default function Dashboard({ stats, recentOrders }: DashboardProps) {
 
     const renderOverview = () => (
         <div className="space-y-6">
-            {/* Welcome Message */}
+                        {/* Welcome Message */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
                 <h2 className="text-2xl font-bold mb-2">Welcome back! 👋</h2>
-                <p className="text-blue-100">Your dashboard is connected to Sales_Data_Sample.xlsx with 3 charts and 2 tables</p>
+                <p className="text-blue-100">
+                    {connectedFile
+                        ? `Your dashboard is connected to ${connectedFile} with dynamic data from your uploaded file`
+                        : 'Upload an Excel file to see your data visualized in charts and tables'
+                    }
+                </p>
+                {!connectedFile && (
+                    <div className="mt-4">
+                        <Link href="/upload-files">
+                            <Button className="bg-white text-blue-600 hover:bg-gray-100">
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload Excel File
+                            </Button>
+                        </Link>
+                    </div>
+                )}
             </div>
 
             {/* KPI Cards */}
