@@ -262,6 +262,7 @@ class WidgetSelectionController extends Controller
             'file_id' => 'required|exists:uploaded_files,id',
             'widget_name' => 'required|string|max:255',
             'widget_type' => 'required|string|in:kpi,bar_chart,pie_chart,table',
+            'function' => 'required|string',
             'column' => 'required_if:widget_type,kpi|string',
             'x_axis' => 'required_if:widget_type,bar_chart|string',
             'y_axis' => 'required_if:widget_type,bar_chart|string',
@@ -326,6 +327,64 @@ class WidgetSelectionController extends Controller
         }
     }
 
+    public function getWidgetSuggestions(Request $request, $fileId)
+    {
+        $file = UploadedFile::where('id', $fileId)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if ($file->status !== 'completed') {
+            return response()->json(['error' => 'File is not processed yet'], 400);
+        }
+
+        try {
+            $aiService = new \App\Services\AIService();
+            $suggestions = $aiService->generateWidgetSuggestions($file);
+
+            return response()->json([
+                'success' => true,
+                'suggestions' => $suggestions
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating widget suggestions: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate suggestions: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getWidgetFunctionOptions(Request $request, $fileId)
+    {
+        $file = UploadedFile::where('id', $fileId)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if ($file->status !== 'completed') {
+            return response()->json(['error' => 'File is not processed yet'], 400);
+        }
+
+        $widgetType = $request->query('widget_type', 'kpi');
+
+        try {
+            $aiService = new \App\Services\AIService();
+            $options = $aiService->generateWidgetFunctionOptions($file, $widgetType);
+
+            return response()->json([
+                'success' => true,
+                'options' => $options
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating widget function options: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate function options: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function createWidgetConfig(Request $request, UploadedFile $file)
     {
         $config = [
@@ -337,15 +396,17 @@ class WidgetSelectionController extends Controller
 
         switch ($request->widget_type) {
             case 'kpi':
-                $config['description'] = "Shows the total value of {$request->column}";
+                $config['description'] = "Shows the {$request->function} of {$request->column}";
                 $config['source_columns'] = [$request->column];
-                $config['calculation_method'] = 'Sum of all values';
+                $config['calculation_method'] = ucfirst($request->function) . ' of all values';
+                $config['function'] = $request->function;
                 break;
 
             case 'bar_chart':
                 $config['description'] = "Shows {$request->y_axis} by {$request->x_axis}";
                 $config['source_columns'] = [$request->x_axis, $request->y_axis];
                 $config['calculation_method'] = "Group by {$request->x_axis} and sum {$request->y_axis}";
+                $config['function'] = $request->function;
                 $config['ai_chart_config'] = [
                     'title' => $request->widget_name,
                     'x_axis' => $request->x_axis,
@@ -359,6 +420,7 @@ class WidgetSelectionController extends Controller
                 $config['description'] = "Shows distribution of {$request->value_column} by {$request->category_column}";
                 $config['source_columns'] = [$request->category_column, $request->value_column];
                 $config['calculation_method'] = 'Distribution analysis';
+                $config['function'] = $request->function;
                 $config['ai_chart_config'] = [
                     'title' => $request->widget_name,
                     'category_column' => $request->category_column,
@@ -372,6 +434,7 @@ class WidgetSelectionController extends Controller
                 $config['description'] = "Shows data table";
                 $config['source_columns'] = $file->processed_data['headers'] ?? [];
                 $config['calculation_method'] = 'Display all data';
+                $config['function'] = $request->function;
                 $config['headers'] = $file->processed_data['headers'] ?? [];
                 $config['data'] = array_slice($file->processed_data['data'] ?? [], 0, 10);
                 $config['maxRows'] = 10;

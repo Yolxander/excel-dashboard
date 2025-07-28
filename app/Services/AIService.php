@@ -1269,4 +1269,394 @@ IMPORTANT:
 
         return $insights;
     }
+
+    public function generateWidgetSuggestions(UploadedFile $file)
+    {
+        try {
+            if (!$file->processed_data) {
+                throw new \Exception('No processed data available for suggestions');
+            }
+
+            $data = $file->processed_data;
+            $headers = $data['headers'] ?? [];
+            $rows = $data['data'] ?? [];
+
+            if (empty($rows)) {
+                throw new \Exception('No data available for suggestions');
+            }
+
+            // Prepare data summary
+            $dataSummary = $this->prepareDataSummary($headers, $rows);
+
+            // Generate suggestions based on data analysis
+            $suggestions = [
+                'kpi_suggestions' => $this->generateKPISuggestions($dataSummary),
+                'chart_suggestions' => $this->generateChartSuggestions($dataSummary),
+                'table_suggestions' => $this->generateTableSuggestions($dataSummary),
+                'data_insights' => $this->generateDataInsightsForSuggestions($dataSummary)
+            ];
+
+            return $suggestions;
+
+        } catch (\Exception $e) {
+            Log::error('Error generating widget suggestions: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function generateKPISuggestions($dataSummary)
+    {
+        $suggestions = [];
+        $numericColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return $analysis['is_primarily_numeric'];
+        });
+
+        foreach (array_slice(array_keys($numericColumns), 0, 5) as $columnName) {
+            $displayName = $this->getColumnDisplayName($columnName);
+            $total = $this->calculateTotalFromColumn($dataSummary, $columnName);
+            $average = $this->calculateAverageFromColumn($dataSummary, $columnName);
+
+            $suggestions[] = [
+                'name' => "Total {$displayName}",
+                'description' => "Shows the total value of {$displayName}",
+                'column' => $columnName,
+                'value' => $total,
+                'average' => $average,
+                'type' => 'kpi',
+                'calculation' => 'Sum of all values'
+            ];
+
+            $suggestions[] = [
+                'name' => "Average {$displayName}",
+                'description' => "Shows the average value of {$displayName}",
+                'column' => $columnName,
+                'value' => $average,
+                'average' => $average,
+                'type' => 'kpi',
+                'calculation' => 'Average of all values'
+            ];
+        }
+
+        return $suggestions;
+    }
+
+    private function generateChartSuggestions($dataSummary)
+    {
+        $suggestions = [];
+        $numericColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return $analysis['is_primarily_numeric'];
+        });
+        $categoricalColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return !$analysis['is_primarily_numeric'] && $analysis['unique_values'] > 1;
+        });
+
+        $numericColumnNames = array_keys($numericColumns);
+        $categoricalColumnNames = array_keys($categoricalColumns);
+
+        // Generate bar chart suggestions
+        if (!empty($categoricalColumnNames) && !empty($numericColumnNames)) {
+            foreach (array_slice($categoricalColumnNames, 0, 3) as $categoryColumn) {
+                foreach (array_slice($numericColumnNames, 0, 2) as $valueColumn) {
+                    $categoryDisplay = $this->getColumnDisplayName($categoryColumn);
+                    $valueDisplay = $this->getColumnDisplayName($valueColumn);
+
+                    $suggestions[] = [
+                        'name' => "{$valueDisplay} by {$categoryDisplay}",
+                        'description' => "Shows {$valueDisplay} by {$categoryDisplay}",
+                        'type' => 'bar_chart',
+                        'x_axis' => $categoryColumn,
+                        'y_axis' => $valueColumn,
+                        'chart_type' => 'bar'
+                    ];
+                }
+            }
+        }
+
+        // Generate pie chart suggestions
+        if (!empty($categoricalColumnNames) && !empty($numericColumnNames)) {
+            foreach (array_slice($categoricalColumnNames, 0, 2) as $categoryColumn) {
+                foreach (array_slice($numericColumnNames, 0, 2) as $valueColumn) {
+                    $categoryDisplay = $this->getColumnDisplayName($categoryColumn);
+                    $valueDisplay = $this->getColumnDisplayName($valueColumn);
+
+                    $suggestions[] = [
+                        'name' => "{$valueDisplay} Distribution",
+                        'description' => "Shows distribution of {$valueDisplay} by {$categoryDisplay}",
+                        'type' => 'pie_chart',
+                        'category_column' => $categoryColumn,
+                        'value_column' => $valueColumn,
+                        'chart_type' => 'pie'
+                    ];
+                }
+            }
+        }
+
+        return $suggestions;
+    }
+
+    private function generateTableSuggestions($dataSummary)
+    {
+        return [
+            [
+                'name' => 'Data Overview',
+                'description' => 'Shows complete data table with all columns',
+                'type' => 'table',
+                'columns' => $dataSummary['headers'],
+                'row_count' => count($dataSummary['sample_data'])
+            ]
+        ];
+    }
+
+    private function generateDataInsightsForSuggestions($dataSummary)
+    {
+        $insights = [];
+
+        // Analyze numeric columns
+        $numericColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return $analysis['is_primarily_numeric'];
+        });
+
+        foreach ($numericColumns as $columnName => $analysis) {
+            $displayName = $this->getColumnDisplayName($columnName);
+            $total = $this->calculateTotalFromColumn($dataSummary, $columnName);
+            $average = $this->calculateAverageFromColumn($dataSummary, $columnName);
+
+            $insights[] = [
+                'column' => $columnName,
+                'display_name' => $displayName,
+                'total' => $total,
+                'average' => $average,
+                'data_points' => $analysis['data_points'],
+                'recommendation' => "Consider creating a KPI widget for {$displayName} to track total ({$total}) and average ({$average}) values."
+            ];
+        }
+
+        // Analyze categorical columns
+        $categoricalColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return !$analysis['is_primarily_numeric'] && $analysis['unique_values'] > 1;
+        });
+
+        foreach ($categoricalColumns as $columnName => $analysis) {
+            $displayName = $this->getColumnDisplayName($columnName);
+            $insights[] = [
+                'column' => $columnName,
+                'display_name' => $displayName,
+                'unique_values' => $analysis['unique_values'],
+                'recommendation' => "Consider creating chart widgets using {$displayName} as categories for better data visualization."
+            ];
+        }
+
+        return $insights;
+    }
+
+    public function generateWidgetFunctionOptions(UploadedFile $file, $widgetType = 'kpi')
+    {
+        try {
+            if (!$file->processed_data) {
+                throw new \Exception('No processed data available for function options');
+            }
+
+            $data = $file->processed_data;
+            $headers = $data['headers'] ?? [];
+            $rows = $data['data'] ?? [];
+
+            if (empty($rows)) {
+                throw new \Exception('No data available for function options');
+            }
+
+            // Prepare data summary
+            $dataSummary = $this->prepareDataSummary($headers, $rows);
+
+            // Generate function options based on widget type
+            switch ($widgetType) {
+                case 'kpi':
+                    return $this->generateKPIFunctionOptions($dataSummary);
+                case 'bar_chart':
+                    return $this->generateBarChartFunctionOptions($dataSummary);
+                case 'pie_chart':
+                    return $this->generatePieChartFunctionOptions($dataSummary);
+                case 'table':
+                    return $this->generateTableFunctionOptions($dataSummary);
+                default:
+                    return [];
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error generating widget function options: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function generateKPIFunctionOptions($dataSummary)
+    {
+        $options = [];
+        $numericColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return $analysis['is_primarily_numeric'];
+        });
+
+        foreach (array_keys($numericColumns) as $columnName) {
+            $displayName = $this->getColumnDisplayName($columnName);
+            $total = $this->calculateTotalFromColumn($dataSummary, $columnName);
+            $average = $this->calculateAverageFromColumn($dataSummary, $columnName);
+            $min = min(array_column($dataSummary['sample_data'], $columnName));
+            $max = max(array_column($dataSummary['sample_data'], $columnName));
+            $count = count($dataSummary['sample_data']);
+
+            // Total function
+            $options[] = [
+                'id' => "total_{$columnName}",
+                'label' => "Total {$displayName}",
+                'description' => "Sum of all {$displayName} values",
+                'function' => 'sum',
+                'column' => $columnName,
+                'value' => $total,
+                'formatted_value' => number_format($total, 2),
+                'calculation' => "Sum of all {$displayName} values"
+            ];
+
+            // Average function
+            $options[] = [
+                'id' => "average_{$columnName}",
+                'label' => "Average {$displayName}",
+                'description' => "Average of all {$displayName} values",
+                'function' => 'average',
+                'column' => $columnName,
+                'value' => $average,
+                'formatted_value' => number_format($average, 2),
+                'calculation' => "Average of all {$displayName} values"
+            ];
+
+            // Count function
+            $options[] = [
+                'id' => "count_{$columnName}",
+                'label' => "Count of {$displayName}",
+                'description' => "Number of {$displayName} records",
+                'function' => 'count',
+                'column' => $columnName,
+                'value' => $count,
+                'formatted_value' => number_format($count),
+                'calculation' => "Count of {$displayName} records"
+            ];
+
+            // Min function
+            $options[] = [
+                'id' => "min_{$columnName}",
+                'label' => "Minimum {$displayName}",
+                'description' => "Lowest {$displayName} value",
+                'function' => 'min',
+                'column' => $columnName,
+                'value' => $min,
+                'formatted_value' => number_format($min, 2),
+                'calculation' => "Minimum {$displayName} value"
+            ];
+
+            // Max function
+            $options[] = [
+                'id' => "max_{$columnName}",
+                'label' => "Maximum {$displayName}",
+                'description' => "Highest {$displayName} value",
+                'function' => 'max',
+                'column' => $columnName,
+                'value' => $max,
+                'formatted_value' => number_format($max, 2),
+                'calculation' => "Maximum {$displayName} value"
+            ];
+        }
+
+        return $options;
+    }
+
+    private function generateBarChartFunctionOptions($dataSummary)
+    {
+        $options = [];
+        $numericColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return $analysis['is_primarily_numeric'];
+        });
+        $categoricalColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return !$analysis['is_primarily_numeric'] && $analysis['unique_values'] > 1;
+        });
+
+        $numericColumnNames = array_keys($numericColumns);
+        $categoricalColumnNames = array_keys($categoricalColumns);
+
+        if (!empty($categoricalColumnNames) && !empty($numericColumnNames)) {
+            foreach (array_slice($categoricalColumnNames, 0, 3) as $categoryColumn) {
+                foreach (array_slice($numericColumnNames, 0, 2) as $valueColumn) {
+                    $categoryDisplay = $this->getColumnDisplayName($categoryColumn);
+                    $valueDisplay = $this->getColumnDisplayName($valueColumn);
+
+                    $options[] = [
+                        'id' => "bar_{$valueColumn}_by_{$categoryColumn}",
+                        'label' => "{$valueDisplay} by {$categoryDisplay}",
+                        'description' => "Bar chart showing {$valueDisplay} grouped by {$categoryDisplay}",
+                        'function' => 'group_by_sum',
+                        'x_axis' => $categoryColumn,
+                        'y_axis' => $valueColumn,
+                        'calculation' => "Group by {$categoryDisplay} and sum {$valueDisplay}"
+                    ];
+                }
+            }
+        }
+
+        return $options;
+    }
+
+    private function generatePieChartFunctionOptions($dataSummary)
+    {
+        $options = [];
+        $numericColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return $analysis['is_primarily_numeric'];
+        });
+        $categoricalColumns = array_filter($dataSummary['column_analysis'], function($analysis) {
+            return !$analysis['is_primarily_numeric'] && $analysis['unique_values'] > 1;
+        });
+
+        $numericColumnNames = array_keys($numericColumns);
+        $categoricalColumnNames = array_keys($categoricalColumns);
+
+        if (!empty($categoricalColumnNames) && !empty($numericColumnNames)) {
+            foreach (array_slice($categoricalColumnNames, 0, 2) as $categoryColumn) {
+                foreach (array_slice($numericColumnNames, 0, 2) as $valueColumn) {
+                    $categoryDisplay = $this->getColumnDisplayName($categoryColumn);
+                    $valueDisplay = $this->getColumnDisplayName($valueColumn);
+
+                    $options[] = [
+                        'id' => "pie_{$valueColumn}_by_{$categoryColumn}",
+                        'label' => "{$valueDisplay} Distribution",
+                        'description' => "Pie chart showing distribution of {$valueDisplay} by {$categoryDisplay}",
+                        'function' => 'distribution',
+                        'category_column' => $categoryColumn,
+                        'value_column' => $valueColumn,
+                        'calculation' => "Distribution of {$valueDisplay} by {$categoryDisplay}"
+                    ];
+                }
+            }
+        }
+
+        return $options;
+    }
+
+    private function generateTableFunctionOptions($dataSummary)
+    {
+        return [
+            [
+                'id' => 'table_all_data',
+                'label' => 'Complete Data Table',
+                'description' => 'Show all data in a table format',
+                'function' => 'display_all',
+                'columns' => $dataSummary['headers'],
+                'row_count' => count($dataSummary['sample_data']),
+                'calculation' => 'Display all data rows'
+            ],
+            [
+                'id' => 'table_summary',
+                'label' => 'Data Summary',
+                'description' => 'Show summary statistics for all columns',
+                'function' => 'summary_stats',
+                'columns' => $dataSummary['headers'],
+                'row_count' => count($dataSummary['sample_data']),
+                'calculation' => 'Display summary statistics'
+            ]
+        ];
+    }
 }

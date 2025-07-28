@@ -87,6 +87,11 @@ export default function WidgetSelection({
     const [newWidgetName, setNewWidgetName] = useState('');
     const [newWidgetType, setNewWidgetType] = useState('kpi');
     const [newWidgetConfig, setNewWidgetConfig] = useState<any>({});
+    const [widgetSuggestions, setWidgetSuggestions] = useState<any>(null);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+    const [functionOptions, setFunctionOptions] = useState<any[]>([]);
+    const [isLoadingFunctionOptions, setIsLoadingFunctionOptions] = useState(false);
+    const [selectedFunction, setSelectedFunction] = useState<any>(null);
     const { toast } = useToast();
 
     // Initialize state on component mount
@@ -329,6 +334,42 @@ export default function WidgetSelection({
             });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const loadFunctionOptions = async (file: UploadedFile, widgetType: string) => {
+        setIsLoadingFunctionOptions(true);
+        try {
+            const response = await fetch(`/widget-selection/function-options/${file.id}?widget_type=${widgetType}`);
+            const data = await response.json();
+
+            if (data.success) {
+                setFunctionOptions(data.options);
+            } else {
+                console.error('Failed to load function options:', data.message);
+            }
+        } catch (error) {
+            console.error('Error loading function options:', error);
+        } finally {
+            setIsLoadingFunctionOptions(false);
+        }
+    };
+
+    const loadWidgetSuggestions = async (file: UploadedFile) => {
+        setIsLoadingSuggestions(true);
+        try {
+            const response = await fetch(`/widget-selection/suggestions/${file.id}`);
+            const data = await response.json();
+
+            if (data.success) {
+                setWidgetSuggestions(data.suggestions);
+            } else {
+                console.error('Failed to load suggestions:', data.message);
+            }
+        } catch (error) {
+            console.error('Error loading widget suggestions:', error);
+        } finally {
+            setIsLoadingSuggestions(false);
         }
     };
 
@@ -593,11 +634,16 @@ export default function WidgetSelection({
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
-                                                            onClick={() => {
+                                                            onClick={async () => {
                                                                 setNewWidgetType('kpi');
                                                                 setNewWidgetName('');
                                                                 setNewWidgetConfig({});
+                                                                setSelectedFunction(null);
                                                                 setIsAddingWidget(true);
+                                                                if (selectedFile) {
+                                                                    await loadWidgetSuggestions(selectedFile);
+                                                                    await loadFunctionOptions(selectedFile, 'kpi');
+                                                                }
                                                             }}
                                                         >
                                                             <Plus className="h-4 w-4 mr-1" />
@@ -686,11 +732,16 @@ export default function WidgetSelection({
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
-                                                            onClick={() => {
+                                                            onClick={async () => {
                                                                 setNewWidgetType('bar_chart');
                                                                 setNewWidgetName('');
                                                                 setNewWidgetConfig({});
+                                                                setSelectedFunction(null);
                                                                 setIsAddingWidget(true);
+                                                                if (selectedFile) {
+                                                                    await loadWidgetSuggestions(selectedFile);
+                                                                    await loadFunctionOptions(selectedFile, 'bar_chart');
+                                                                }
                                                             }}
                                                         >
                                                             <Plus className="h-4 w-4 mr-1" />
@@ -889,6 +940,115 @@ export default function WidgetSelection({
                                                     </div>
                                                 )}
 
+                                                {/* AI Suggestions for Manual Creation */}
+                                                {newWidgetConfig.method === 'manual' && widgetSuggestions && (
+                                                    <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                                        <div className="flex items-center space-x-2 mb-3">
+                                                            <BrainCircuit className="h-5 w-5 text-blue-600" />
+                                                            <h4 className="font-semibold text-blue-900">AI Suggestions</h4>
+                                                        </div>
+
+                                                        {isLoadingSuggestions ? (
+                                                            <div className="text-center py-4">
+                                                                <RefreshCw className="h-6 w-6 text-blue-600 mx-auto mb-2 animate-spin" />
+                                                                <p className="text-sm text-blue-700">Loading AI suggestions...</p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-4">
+                                                                {/* KPI Suggestions */}
+                                                                {widgetSuggestions.kpi_suggestions && widgetSuggestions.kpi_suggestions.length > 0 && (
+                                                                    <div>
+                                                                        <h5 className="font-medium text-blue-800 mb-2">KPI Widget Suggestions</h5>
+                                                                        <div className="grid grid-cols-1 gap-2">
+                                                                            {widgetSuggestions.kpi_suggestions.slice(0, 3).map((suggestion: any, index: number) => (
+                                                                                <Button
+                                                                                    key={index}
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    onClick={() => {
+                                                                                        setNewWidgetType('kpi');
+                                                                                        setNewWidgetName(suggestion.name);
+                                                                                        setNewWidgetConfig({ ...newWidgetConfig, column: suggestion.column });
+                                                                                    }}
+                                                                                    className="justify-start text-left h-auto p-3 bg-white hover:bg-blue-50"
+                                                                                >
+                                                                                    <div className="flex items-center space-x-2">
+                                                                                        <TrendingUp className="h-4 w-4 text-blue-600" />
+                                                                                        <div>
+                                                                                            <p className="font-medium text-sm">{suggestion.name}</p>
+                                                                                            <p className="text-xs text-gray-600">{suggestion.description}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </Button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Chart Suggestions */}
+                                                                {widgetSuggestions.chart_suggestions && widgetSuggestions.chart_suggestions.length > 0 && (
+                                                                    <div>
+                                                                        <h5 className="font-medium text-blue-800 mb-2">Chart Widget Suggestions</h5>
+                                                                        <div className="grid grid-cols-1 gap-2">
+                                                                            {widgetSuggestions.chart_suggestions.slice(0, 3).map((suggestion: any, index: number) => (
+                                                                                <Button
+                                                                                    key={index}
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    onClick={() => {
+                                                                                        setNewWidgetType(suggestion.type);
+                                                                                        setNewWidgetName(suggestion.name);
+                                                                                        if (suggestion.type === 'bar_chart') {
+                                                                                            setNewWidgetConfig({
+                                                                                                ...newWidgetConfig,
+                                                                                                xAxis: suggestion.x_axis,
+                                                                                                yAxis: suggestion.y_axis
+                                                                                            });
+                                                                                        } else if (suggestion.type === 'pie_chart') {
+                                                                                            setNewWidgetConfig({
+                                                                                                ...newWidgetConfig,
+                                                                                                categoryColumn: suggestion.category_column,
+                                                                                                valueColumn: suggestion.value_column
+                                                                                            });
+                                                                                        }
+                                                                                    }}
+                                                                                    className="justify-start text-left h-auto p-3 bg-white hover:bg-blue-50"
+                                                                                >
+                                                                                    <div className="flex items-center space-x-2">
+                                                                                        {suggestion.chart_type === 'bar' ? (
+                                                                                            <BarChart3 className="h-4 w-4 text-green-600" />
+                                                                                        ) : (
+                                                                                            <PieChart className="h-4 w-4 text-purple-600" />
+                                                                                        )}
+                                                                                        <div>
+                                                                                            <p className="font-medium text-sm">{suggestion.name}</p>
+                                                                                            <p className="text-xs text-gray-600">{suggestion.description}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </Button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Data Insights */}
+                                                                {widgetSuggestions.data_insights && widgetSuggestions.data_insights.length > 0 && (
+                                                                    <div>
+                                                                        <h5 className="font-medium text-blue-800 mb-2">Data Insights</h5>
+                                                                        <div className="space-y-2">
+                                                                            {widgetSuggestions.data_insights.slice(0, 2).map((insight: any, index: number) => (
+                                                                                <div key={index} className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
+                                                                                    <strong>{insight.display_name}:</strong> {insight.recommendation}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
                                                 {/* Manual Method Form */}
                                                 {newWidgetConfig.method === 'manual' && (
                                                     <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -897,7 +1057,13 @@ export default function WidgetSelection({
                                                             <Label htmlFor="widget-type" className="text-sm font-semibold text-gray-700">
                                                                 Widget Type
                                                             </Label>
-                                                            <Select onValueChange={(value) => setNewWidgetType(value)} value={newWidgetType}>
+                                                            <Select onValueChange={async (value) => {
+                                                                setNewWidgetType(value);
+                                                                setSelectedFunction(null);
+                                                                if (selectedFile) {
+                                                                    await loadFunctionOptions(selectedFile, value);
+                                                                }
+                                                            }} value={newWidgetType}>
                                                                 <SelectTrigger className="h-12 text-base">
                                                                     <SelectValue placeholder="Select a widget type" />
                                                                 </SelectTrigger>
@@ -922,24 +1088,53 @@ export default function WidgetSelection({
                                                             </Select>
                                                         </div>
 
-                                                        {/* Column Selection */}
-                                                        {selectedFile?.processed_data?.headers && (
+                                                        {/* Widget Function Selection */}
+                                                        {functionOptions.length > 0 && (
                                                             <div className="space-y-2">
-                                                                <Label htmlFor="column-select" className="text-sm font-semibold text-gray-700">
-                                                                    Select Column
+                                                                <Label htmlFor="function-select" className="text-sm font-semibold text-gray-700">
+                                                                    What should this widget do?
                                                                 </Label>
-                                                                <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, column: value })} value={newWidgetConfig.column}>
+                                                                <Select onValueChange={(value) => {
+                                                                    const selected = functionOptions.find(option => option.id === value);
+                                                                    setSelectedFunction(selected);
+                                                                    if (selected) {
+                                                                        setNewWidgetName(selected.label);
+                                                                        if (selected.function === 'sum' || selected.function === 'average' || selected.function === 'count' || selected.function === 'min' || selected.function === 'max') {
+                                                                            setNewWidgetConfig({ ...newWidgetConfig, column: selected.column, function: selected.function });
+                                                                        } else if (selected.function === 'group_by_sum') {
+                                                                            setNewWidgetConfig({ ...newWidgetConfig, xAxis: selected.x_axis, yAxis: selected.y_axis, function: selected.function });
+                                                                        } else if (selected.function === 'distribution') {
+                                                                            setNewWidgetConfig({ ...newWidgetConfig, categoryColumn: selected.category_column, valueColumn: selected.value_column, function: selected.function });
+                                                                        }
+                                                                    }
+                                                                }} value={selectedFunction?.id || ''}>
                                                                     <SelectTrigger className="h-12 text-base">
-                                                                        <SelectValue placeholder="Choose a column from your data" />
+                                                                        <SelectValue placeholder="Choose what this widget should calculate" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
-                                                                        {selectedFile.processed_data.headers.map((header: string) => (
-                                                                            <SelectItem key={header} value={header}>
-                                                                                {header}
+                                                                        {functionOptions.map((option) => (
+                                                                            <SelectItem key={option.id} value={option.id}>
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="font-medium">{option.label}</span>
+                                                                                    <span className="text-xs text-gray-500">{option.description}</span>
+                                                                                    {option.formatted_value && (
+                                                                                        <span className="text-xs text-blue-600">Current: {option.formatted_value}</span>
+                                                                                    )}
+                                                                                </div>
                                                                             </SelectItem>
                                                                         ))}
                                                                     </SelectContent>
                                                                 </Select>
+                                                                {selectedFunction && (
+                                                                    <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                                                                        <strong>Calculation:</strong> {selectedFunction.calculation}
+                                                                        {selectedFunction.formatted_value && (
+                                                                            <span className="ml-2 text-blue-600">
+                                                                                (Current value: {selectedFunction.formatted_value})
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
 
@@ -1127,11 +1322,12 @@ export default function WidgetSelection({
                                                                         file_id: selectedFile?.id,
                                                                         widget_name: newWidgetName,
                                                                         widget_type: newWidgetType,
-                                                                        column: newWidgetConfig.column,
-                                                                        x_axis: newWidgetConfig.xAxis,
-                                                                        y_axis: newWidgetConfig.yAxis,
-                                                                        category_column: newWidgetConfig.categoryColumn,
-                                                                        value_column: newWidgetConfig.valueColumn,
+                                                                        column: selectedFunction?.column,
+                                                                        x_axis: selectedFunction?.x_axis,
+                                                                        y_axis: selectedFunction?.y_axis,
+                                                                        category_column: selectedFunction?.category_column,
+                                                                        value_column: selectedFunction?.value_column,
+                                                                        function: selectedFunction?.function,
                                                                     }),
                                                                 });
 
@@ -1166,13 +1362,11 @@ export default function WidgetSelection({
                                                             }
                                                         }
                                                     }}
-                                                    disabled={
+                                                                                                        disabled={
                                                         !newWidgetConfig.method ||
                                                         (newWidgetConfig.method === 'manual' && (
                                                             !newWidgetName ||
-                                                            (newWidgetType === 'kpi' && !newWidgetConfig.column) ||
-                                                            (newWidgetType === 'bar_chart' && (!newWidgetConfig.xAxis || !newWidgetConfig.yAxis)) ||
-                                                            (newWidgetType === 'pie_chart' && (!newWidgetConfig.categoryColumn || !newWidgetConfig.valueColumn))
+                                                            !selectedFunction
                                                         ))
                                                     }
                                                     className="px-6 py-2 bg-blue-600 hover:bg-blue-700"
