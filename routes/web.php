@@ -21,6 +21,8 @@ Route::post('/connected-files/{fileId}/connect', [ConnectedFilesController::clas
 Route::post('/connected-files/{fileId}/disconnect', [ConnectedFilesController::class, 'disconnectFile']);
 Route::get('/combine-files', [CombineFilesController::class, 'index']);
 Route::post('/combine-files', [CombineFilesController::class, 'combineFiles']);
+Route::post('/combine-files/preview', [CombineFilesController::class, 'generateAIPreview']);
+Route::post('/combine-files/{fileId}/regenerate-insights', [CombineFilesController::class, 'regenerateAIInsights']);
 Route::get('/data-sources', [DataSourcesController::class, 'index']);
 Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);
 
