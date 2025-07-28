@@ -19,6 +19,7 @@ import {
     PieChart,
     Filter,
     ChevronDown,
+    ChevronUp,
     MoreHorizontal,
     Plus,
     Play,
@@ -45,12 +46,15 @@ interface DashboardProps {
         pieChart: Array<{ name: string; value: number }>;
     };
     tableData?: Array<any>;
+    availableColumns?: string[];
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
-export default function Dashboard({ stats, connectedFile, chartData, tableData }: DashboardProps) {
+export default function Dashboard({ stats, connectedFile, chartData, tableData, availableColumns }: DashboardProps) {
     const [showDataNotification, setShowDataNotification] = React.useState(false);
+    const [activeFilters, setActiveFilters] = React.useState<Record<string, string>>({});
+    const [showAllFilters, setShowAllFilters] = React.useState(false);
 
     React.useEffect(() => {
         if (connectedFile) {
@@ -58,6 +62,17 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData }
             setTimeout(() => setShowDataNotification(false), 5000);
         }
     }, [connectedFile]);
+
+    const handleFilterChange = (column: string, value: string) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            [column]: value
+        }));
+    };
+
+    const visibleColumns = availableColumns && availableColumns.length > 3 && !showAllFilters
+        ? availableColumns.slice(0, 3)
+        : availableColumns;
 
 
 
@@ -254,31 +269,71 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData }
             <Card>
                 <CardHeader>
                     <CardTitle>Data Filters</CardTitle>
-                    <CardDescription>Filter your dashboard data</CardDescription>
+                    <CardDescription>Filter your dashboard data by Excel columns</CardDescription>
                 </CardHeader>
-                <CardContent>
+                                <CardContent>
                     <div className="flex flex-wrap gap-4">
+                        {visibleColumns && visibleColumns.length > 0 ? (
+                            visibleColumns.map((column, index) => (
+                                <div key={index} className="flex items-center space-x-2">
+                                    <Filter className="h-4 w-4 text-gray-500" />
+                                    <select
+                                        className="border rounded-md px-3 py-1 text-sm"
+                                        value={activeFilters[column] || `All ${column}`}
+                                        onChange={(e) => handleFilterChange(column, e.target.value)}
+                                    >
+                                        <option value={`All ${column}`}>All {column}</option>
+                                        {tableData && tableData.length > 0 && (
+                                            <>
+                                                {Array.from(new Set(tableData.map(row => row[column]))).slice(0, 10).map((value, valueIndex) => (
+                                                    <option key={valueIndex} value={value}>{value}</option>
+                                                ))}
+                                                {Array.from(new Set(tableData.map(row => row[column]))).length > 10 && (
+                                                    <option disabled>... and {Array.from(new Set(tableData.map(row => row[column]))).length - 10} more</option>
+                                                )}
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="flex items-center space-x-2">
+                                <Filter className="h-4 w-4 text-gray-500" />
+                                <select className="border rounded-md px-3 py-1 text-sm" disabled>
+                                    <option>No data available</option>
+                                </select>
+                            </div>
+                        )}
+
+                        {/* See More/Less Button */}
+                        {availableColumns && availableColumns.length > 3 && (
+                            <div className="flex items-center">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowAllFilters(!showAllFilters)}
+                                    className="text-xs hover:bg-gray-50 transition-colors"
+                                >
+                                    {showAllFilters ? (
+                                        <>
+                                            <ChevronUp className="h-3 w-3 mr-1" />
+                                            Show Less
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ChevronDown className="h-3 w-3 mr-1" />
+                                            See More ({availableColumns.length - 3} more)
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Time-based filters */}
                         <div className="flex items-center space-x-2">
                             <Filter className="h-4 w-4 text-gray-500" />
                             <select className="border rounded-md px-3 py-1 text-sm">
-                                <option>All Categories</option>
-                                {chartData?.barChart.map((item, index) => (
-                                    <option key={index}>{item.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Filter className="h-4 w-4 text-gray-500" />
-                            <select className="border rounded-md px-3 py-1 text-sm">
-                                <option>All Departments</option>
-                                <option>Sales</option>
-                                <option>Marketing</option>
-                                <option>HR</option>
-                            </select>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Filter className="h-4 w-4 text-gray-500" />
-                            <select className="border rounded-md px-3 py-1 text-sm">
+                                <option>All Time</option>
                                 <option>Last 30 Days</option>
                                 <option>Last 7 Days</option>
                                 <option>Last 90 Days</option>
@@ -286,6 +341,29 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData }
                             </select>
                         </div>
                     </div>
+
+                    {/* Active Filters Summary */}
+                    {Object.keys(activeFilters).length > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                            <div className="flex items-center space-x-2 mb-2">
+                                <Filter className="h-4 w-4 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.entries(activeFilters).map(([column, value]) => (
+                                    <Badge key={column} variant="secondary" className="text-xs">
+                                        {column}: {value}
+                                        <button
+                                            onClick={() => handleFilterChange(column, `All ${column}`)}
+                                            className="ml-1 text-gray-500 hover:text-gray-700"
+                                        >
+                                            ×
+                                        </button>
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

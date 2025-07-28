@@ -206,13 +206,13 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                 <XCircle className="h-4 w-4" />
                             </button>
                         </div>
-                    </div>
+                </div>
                 )}
 
-                <div className="space-y-6">
+                    <div className="space-y-6">
                     {/* Uploaded Files Section */}
-                    <Card>
-                        <CardHeader>
+                            <Card>
+                                <CardHeader>
                             <CardTitle className="flex items-center">
                                 <Database className="h-5 w-5 mr-2" />
                                 Uploaded Files
@@ -220,14 +220,14 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                             <CardDescription>
                                 Manage your Excel files and connect them to dashboard widgets
                             </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                                </CardHeader>
+                                <CardContent>
                             {uploadedFiles.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {uploadedFiles.map((file) => (
                                         <Card key={file.id} className="relative">
                                             <CardHeader className="pb-3">
-                                                <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between">
                                                     <div className="flex items-center space-x-2">
                                                         {getFileIcon(file.file_type)}
                                                         <div>
@@ -236,20 +236,20 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                                 {formatFileSize(file.file_size)} • {file.file_type.toUpperCase()}
                                                             </CardDescription>
                                                         </div>
-                                                    </div>
+                                        </div>
                                                     {isFileConnected(file.id) && (
                                                         <Badge variant="default" className="bg-blue-100 text-blue-800">
                                                             <LinkIcon className="h-3 w-3 mr-1" />
                                                             Connected
                                                         </Badge>
                                                     )}
-                                                </div>
+                                        </div>
                                                 <div className="flex items-center justify-between mt-2">
                                                     {getStatusBadge(file.status)}
                                                     <span className="text-xs text-gray-500">
                                                         {new Date(file.created_at).toLocaleDateString()}
                                                     </span>
-                                                </div>
+                                        </div>
                                             </CardHeader>
                                             <CardContent className="pt-0">
                                                 <div className="flex space-x-2">
@@ -269,7 +269,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                                         <Unlink className="h-4 w-4 mr-2" />
                                                                     )}
                                                                     Disconnect
-                                                                </Button>
+                                            </Button>
                                                             ) : (
                                                                 <Button
                                                                     variant="default"
@@ -284,18 +284,18 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                                         <LinkIcon className="h-4 w-4 mr-2" />
                                                                     )}
                                                                     Connect
-                                                                </Button>
+                                            </Button>
                                                             )}
                                                         </>
                                                     )}
-                                                    <Button variant="outline" size="sm">
+                                            <Button variant="outline" size="sm">
                                                         <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+                                            </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
                                     ))}
-                                </div>
+                                        </div>
                             ) : (
                                 <div className="text-center py-8">
                                     <Database className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -305,16 +305,16 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                         <Button>
                                             <Upload className="h-4 w-4 mr-2" />
                                             Upload Files
-                                        </Button>
+                                            </Button>
                                     </Link>
-                                </div>
+                                        </div>
                             )}
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
 
                     {/* Dashboard Widgets Section */}
-                    <Card>
-                        <CardHeader>
+                            <Card>
+                                <CardHeader>
                             <CardTitle className="flex items-center">
                                 <Settings className="h-5 w-5 mr-2" />
                                 Dashboard Widgets
@@ -322,8 +322,8 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                             <CardDescription>
                                 Track which widgets are connected to which files
                             </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                                </CardHeader>
+                                <CardContent>
                             {dashboardWidgets.length > 0 ? (
                                 <Table>
                                     <TableHeader>
@@ -342,7 +342,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                     <div className="flex items-center space-x-2">
                                                         {getWidgetIcon(widget.widget_type)}
                                                         <span>{widget.widget_name}</span>
-                                                    </div>
+                                        </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline" className="capitalize">
@@ -354,7 +354,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                         <div className="flex items-center space-x-2">
                                                             {getFileIcon(widget.uploaded_file.file_type)}
                                                             <span className="text-sm">{widget.uploaded_file.original_filename}</span>
-                                                        </div>
+                                        </div>
                                                     ) : (
                                                         <span className="text-gray-400 text-sm">No file connected</span>
                                                     )}
@@ -384,42 +384,42 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                     <Settings className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                                     <p className="text-gray-500">No widgets configured</p>
                                     <p className="text-sm text-gray-400">Connect a file to create dashboard widgets</p>
-                                </div>
+                                        </div>
                             )}
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
 
                     {/* Quick Actions */}
-                    <Card>
-                        <CardHeader>
+                            <Card>
+                                <CardHeader>
                             <CardTitle>Quick Actions</CardTitle>
                             <CardDescription>Common tasks and shortcuts</CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                                </CardHeader>
+                                <CardContent>
                             <div className="flex flex-wrap gap-3">
                                 <Link href="/upload-files">
                                     <Button variant="outline">
                                         <Upload className="h-4 w-4 mr-2" />
                                         Upload New File
-                                    </Button>
+                                            </Button>
                                 </Link>
                                 <Link href="/">
                                     <Button variant="outline">
-                                        <BarChart3 className="h-4 w-4 mr-2" />
+                                                <BarChart3 className="h-4 w-4 mr-2" />
                                         View Dashboard
-                                    </Button>
+                                            </Button>
                                 </Link>
                                 <Link href="/data-sources">
                                     <Button variant="outline">
                                         <Database className="h-4 w-4 mr-2" />
                                         Data Sources
-                                    </Button>
+                                            </Button>
                                 </Link>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </DashboardLayout>
-        </>
-    );
-}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </DashboardLayout>
+            </>
+        );
+    }

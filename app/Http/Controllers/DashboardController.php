@@ -69,6 +69,9 @@ class DashboardController extends Controller
             'connectedFile' => $connectedFile,
             'chartData' => $chartData,
             'tableData' => $tableData,
+            'availableColumns' => $activeWidget && $activeWidget->uploadedFile && $activeWidget->uploadedFile->processed_data
+                ? $activeWidget->uploadedFile->processed_data['headers'] ?? []
+                : [],
         ];
 
         Log::info('Rendering dashboard with props: ' . json_encode($props));
