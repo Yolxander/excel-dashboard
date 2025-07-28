@@ -6,14 +6,22 @@ import {
     FileText,
     Database,
     Clock,
-    Link as LinkIcon
+    Link as LinkIcon,
+    RefreshCw,
+    Settings,
+    BrainCircuit,
+    Database as DatabaseIcon
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
+    showUpdateButton?: boolean;
+    onUpdateWidgets?: (dataType: 'ai' | 'raw') => void;
+    isUpdating?: boolean;
+    currentDataType?: 'ai' | 'raw';
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw' }: DashboardLayoutProps) {
     const { url } = usePage();
 
     const sidebarItems = [
@@ -80,8 +88,53 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 {/* Header */}
                 <header className="bg-white shadow-sm border-b">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="py-6">
-                            {/* Header content will be handled by individual pages */}
+                        <div className="py-6 flex items-center justify-between">
+                            {/* Left side - Page title */}
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+                                <p className="text-sm text-gray-600">Manage your data and insights</p>
+                            </div>
+
+                                                        {/* Right side - Data Source Switch */}
+                            {showUpdateButton && onUpdateWidgets && (
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                                        <button
+                                            onClick={() => onUpdateWidgets('raw')}
+                                            disabled={isUpdating}
+                                            className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                                                currentDataType === 'raw'
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        >
+                                            {isUpdating && currentDataType === 'raw' ? (
+                                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                            ) : (
+                                                <DatabaseIcon className="h-4 w-4 mr-2" />
+                                            )}
+                                            Raw Data
+                                        </button>
+
+                                        <button
+                                            onClick={() => onUpdateWidgets('ai')}
+                                            disabled={isUpdating}
+                                            className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                                                currentDataType === 'ai'
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        >
+                                            {isUpdating && currentDataType === 'ai' ? (
+                                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                            ) : (
+                                                <BrainCircuit className="h-4 w-4 mr-2" />
+                                            )}
+                                            AI Insights
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </header>

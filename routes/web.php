@@ -26,4 +26,8 @@ Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);
 
 // AI Analysis Routes
 Route::post('/ai/analyze-file/{fileId}', [ConnectedFilesController::class, 'analyzeFileWithAI']);
+Route::post('/ai/analyze-file/current', [DashboardController::class, 'analyzeCurrentFileWithAI']);
 Route::get('/ai/widget-insights/{widgetId}', [ConnectedFilesController::class, 'getWidgetInsights']);
+
+// Dashboard Update Routes
+Route::post('/dashboard/update-raw-data/current', [DashboardController::class, 'updateWithRawData']);

@@ -133,10 +133,10 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
 
             const data = await response.json();
 
-            if (data.success) {
+                        if (data.success) {
                 setToastMessage({
                     type: 'success',
-                    message: 'AI analysis completed successfully! Check the dashboard for enhanced insights.'
+                    message: 'AI analysis completed successfully! Enhanced widgets and charts are now available on the dashboard.'
                 });
                 // Redirect to dashboard to see the AI insights
                 setTimeout(() => {

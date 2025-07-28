@@ -40,13 +40,20 @@ class ConnectedFilesController extends Controller
         $aiService = new AIService();
         $aiInsights = $aiService->analyzeFileData($file);
 
+        // Generate chart data from AI insights if available
+        $chartData = [];
+        if ($aiInsights && isset($aiInsights['chart_recommendations'])) {
+            $chartData = $this->generateChartDataFromAIInsights($aiInsights);
+        }
+
         Log::info('File connected to dashboard: ' . $file->original_filename);
 
         return response()->json([
             'success' => true,
             'message' => $file->original_filename . ' is now connected to the dashboard with AI insights',
             'file' => $file,
-            'ai_insights' => $aiInsights
+            'ai_insights' => $aiInsights,
+            'chart_data' => $chartData
         ]);
     }
 
@@ -182,5 +189,63 @@ class ConnectedFilesController extends Controller
                 'message' => 'Error retrieving widget insights: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function generateChartDataFromAIInsights($aiInsights)
+    {
+        $chartData = [
+            'barChart' => [],
+            'pieChart' => []
+        ];
+
+        if (isset($aiInsights['chart_recommendations'])) {
+            $recommendations = $aiInsights['chart_recommendations'];
+
+            // Generate bar chart data based on AI recommendations
+            if (isset($recommendations['bar_chart'])) {
+                $barConfig = $recommendations['bar_chart'];
+                $chartData['barChart'] = $this->generateBarChartFromAIRecommendation($barConfig);
+            }
+
+            // Generate pie chart data based on AI recommendations
+            if (isset($recommendations['pie_chart'])) {
+                $pieConfig = $recommendations['pie_chart'];
+                $chartData['pieChart'] = $this->generatePieChartFromAIRecommendation($pieConfig);
+            }
+        }
+
+        return $chartData;
+    }
+
+    private function generateBarChartFromAIRecommendation($barConfig)
+    {
+        // Use AI-generated chart data if available, otherwise generate sample data
+        if (isset($barConfig['chart_data']) && is_array($barConfig['chart_data'])) {
+            return $barConfig['chart_data'];
+        }
+
+        // Generate sample bar chart data based on AI recommendation
+        return [
+            ['name' => $barConfig['x_axis'] ?? 'Category A', 'value' => 400],
+            ['name' => $barConfig['x_axis'] ?? 'Category B', 'value' => 300],
+            ['name' => $barConfig['x_axis'] ?? 'Category C', 'value' => 200],
+            ['name' => $barConfig['x_axis'] ?? 'Category D', 'value' => 150],
+        ];
+    }
+
+    private function generatePieChartFromAIRecommendation($pieConfig)
+    {
+        // Use AI-generated chart data if available, otherwise generate sample data
+        if (isset($pieConfig['chart_data']) && is_array($pieConfig['chart_data'])) {
+            return $pieConfig['chart_data'];
+        }
+
+        // Generate sample pie chart data based on AI recommendation
+        return [
+            ['name' => $pieConfig['category_column'] ?? 'Group A', 'value' => 35],
+            ['name' => $pieConfig['category_column'] ?? 'Group B', 'value' => 25],
+            ['name' => $pieConfig['category_column'] ?? 'Group C', 'value' => 25],
+            ['name' => $pieConfig['category_column'] ?? 'Group D', 'value' => 15],
+        ];
     }
 }

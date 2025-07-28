@@ -33,19 +33,20 @@ class DashboardController extends Controller
             $data = $file->processed_data;
             Log::info('Using data from connected file: ' . $file->original_filename);
 
-            // Try to get AI-enhanced stats first
+                        // Try to get AI-enhanced stats first
             $aiService = new AIService();
             $aiInsights = $aiService->analyzeFileData($file);
 
             if ($aiInsights && isset($aiInsights['widget_insights'])) {
                 $stats = $this->generateStatsFromAIInsights($aiInsights['widget_insights']);
-                Log::info('Using AI-enhanced stats for dashboard');
+                $chartData = $this->generateChartDataFromAIInsights($aiInsights);
+                Log::info('Using AI-enhanced stats and charts for dashboard');
             } else {
                 $stats = $this->generateStatsFromData($data);
-                Log::info('Using standard stats for dashboard');
+                $chartData = $this->generateChartDataFromData($data);
+                Log::info('Using standard stats and charts for dashboard');
             }
 
-            $chartData = $this->generateChartDataFromData($data);
             $tableData = $this->generateTableDataFromData($data);
             $connectedFile = $file->original_filename;
 
@@ -73,7 +74,10 @@ class DashboardController extends Controller
             'stats' => $stats,
             'connectedFile' => $connectedFile,
             'chartData' => $chartData,
+            'chartTitles' => $this->getChartTitles($aiInsights),
+            'chartDescriptions' => $this->getChartDescriptions($aiInsights),
             'tableData' => $tableData,
+            'dataType' => $aiInsights && isset($aiInsights['widget_insights']) ? 'ai' : 'raw',
             'availableColumns' => $activeWidget && $activeWidget->uploadedFile && $activeWidget->uploadedFile->processed_data
                 ? $activeWidget->uploadedFile->processed_data['headers'] ?? []
                 : [],
@@ -100,6 +104,115 @@ class DashboardController extends Controller
 
         Log::info("AI-enhanced stats generated: " . json_encode($stats));
         return $stats;
+    }
+
+    private function generateChartDataFromAIInsights($aiInsights)
+    {
+        Log::info('Generating chart data from AI insights: ' . json_encode($aiInsights));
+
+        $chartData = [
+            'barChart' => [],
+            'pieChart' => []
+        ];
+
+        if (isset($aiInsights['chart_recommendations'])) {
+            $recommendations = $aiInsights['chart_recommendations'];
+
+            // Generate bar chart data based on AI recommendations
+            if (isset($recommendations['bar_chart'])) {
+                $barConfig = $recommendations['bar_chart'];
+                $chartData['barChart'] = $this->generateBarChartFromAIRecommendation($barConfig);
+            }
+
+            // Generate pie chart data based on AI recommendations
+            if (isset($recommendations['pie_chart'])) {
+                $pieConfig = $recommendations['pie_chart'];
+                $chartData['pieChart'] = $this->generatePieChartFromAIRecommendation($pieConfig);
+            }
+        }
+
+        Log::info("AI-enhanced chart data generated: " . json_encode($chartData));
+        return $chartData;
+    }
+
+        private function generateBarChartFromAIRecommendation($barConfig)
+    {
+        // Use AI-generated chart data if available, otherwise generate sample data
+        if (isset($barConfig['chart_data']) && is_array($barConfig['chart_data'])) {
+            return $barConfig['chart_data'];
+        }
+
+        // Generate sample bar chart data based on AI recommendation
+        return [
+            ['name' => $barConfig['x_axis'] ?? 'Category A', 'value' => 400],
+            ['name' => $barConfig['x_axis'] ?? 'Category B', 'value' => 300],
+            ['name' => $barConfig['x_axis'] ?? 'Category C', 'value' => 200],
+            ['name' => $barConfig['x_axis'] ?? 'Category D', 'value' => 150],
+        ];
+    }
+
+    private function generatePieChartFromAIRecommendation($pieConfig)
+    {
+        // Use AI-generated chart data if available, otherwise generate sample data
+        if (isset($pieConfig['chart_data']) && is_array($pieConfig['chart_data'])) {
+            return $pieConfig['chart_data'];
+        }
+
+        // Generate sample pie chart data based on AI recommendation
+        return [
+            ['name' => $pieConfig['category_column'] ?? 'Group A', 'value' => 35],
+            ['name' => $pieConfig['category_column'] ?? 'Group B', 'value' => 25],
+            ['name' => $pieConfig['category_column'] ?? 'Group C', 'value' => 25],
+            ['name' => $pieConfig['category_column'] ?? 'Group D', 'value' => 15],
+        ];
+    }
+
+    private function getChartTitleFromAI($chartConfig, $chartType)
+    {
+        if (isset($chartConfig['title'])) {
+            return $chartConfig['title'];
+        }
+
+        return $chartType === 'bar_chart' ? 'AI Analysis - Performance Overview' : 'AI Analysis - Data Distribution';
+    }
+
+        private function getChartDescriptionFromAI($chartConfig, $chartType)
+    {
+        if (isset($chartConfig['description'])) {
+            return $chartConfig['description'];
+        }
+
+        return $chartType === 'bar_chart'
+            ? 'AI-generated performance analysis based on your data'
+            : 'AI-generated distribution analysis of your data';
+    }
+
+    private function getChartTitles($aiInsights)
+    {
+        if (!$aiInsights || !isset($aiInsights['chart_recommendations'])) {
+            return null;
+        }
+
+        $recommendations = $aiInsights['chart_recommendations'];
+
+        return [
+            'barChart' => $this->getChartTitleFromAI($recommendations['bar_chart'] ?? [], 'bar_chart'),
+            'pieChart' => $this->getChartTitleFromAI($recommendations['pie_chart'] ?? [], 'pie_chart')
+        ];
+    }
+
+    private function getChartDescriptions($aiInsights)
+    {
+        if (!$aiInsights || !isset($aiInsights['chart_recommendations'])) {
+            return null;
+        }
+
+        $recommendations = $aiInsights['chart_recommendations'];
+
+        return [
+            'barChart' => $this->getChartDescriptionFromAI($recommendations['bar_chart'] ?? [], 'bar_chart'),
+            'pieChart' => $this->getChartDescriptionFromAI($recommendations['pie_chart'] ?? [], 'pie_chart')
+        ];
     }
 
     private function generateStatsFromData($data)
@@ -472,5 +585,108 @@ class DashboardController extends Controller
             'avgValue' => $avgValue,
             'hasData' => $numericCount > 0
         ];
+    }
+
+    public function analyzeCurrentFileWithAI(Request $request)
+    {
+        // Get the most recently connected file from dashboard widgets
+        $activeWidget = DashboardWidget::with('uploadedFile')
+            ->where('is_active', true)
+            ->whereNotNull('uploaded_file_id')
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('status', 'completed');
+            })
+            ->orderBy('updated_at', 'desc')
+            ->first();
+
+        if (!$activeWidget || !$activeWidget->uploadedFile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No connected file found'
+            ], 404);
+        }
+
+        try {
+            $aiService = new AIService();
+            $insights = $aiService->analyzeFileData($activeWidget->uploadedFile);
+
+            if ($insights) {
+                Log::info('AI analysis completed successfully for current file: ' . $activeWidget->uploadedFile->original_filename);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'AI analysis completed successfully',
+                    'insights' => $insights
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'AI analysis failed - no insights generated'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('AI analysis error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'AI analysis failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateWithRawData(Request $request)
+    {
+        // Get the most recently connected file from dashboard widgets
+        $activeWidget = DashboardWidget::with('uploadedFile')
+            ->where('is_active', true)
+            ->whereNotNull('uploaded_file_id')
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('status', 'completed');
+            })
+            ->orderBy('updated_at', 'desc')
+            ->first();
+
+        if (!$activeWidget || !$activeWidget->uploadedFile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No connected file found'
+            ], 404);
+        }
+
+        try {
+            $file = $activeWidget->uploadedFile;
+            $data = $file->processed_data;
+
+            // Generate stats from raw data (without AI)
+            $stats = $this->generateStatsFromData($data);
+
+            // Update widget configurations to use raw data
+            $widgets = DashboardWidget::where('uploaded_file_id', $file->id)
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($widgets as $widget) {
+                $currentConfig = $widget->widget_config ?? [];
+                $currentConfig['data_source'] = 'raw';
+                $currentConfig['last_updated'] = now()->toISOString();
+
+                $widget->update([
+                    'widget_config' => $currentConfig
+                ]);
+            }
+
+            Log::info('Dashboard updated with raw data for file: ' . $file->original_filename);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dashboard updated with raw data successfully',
+                'stats' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Raw data update error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update with raw data: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

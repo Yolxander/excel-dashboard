@@ -32,7 +32,9 @@ import {
     BarChart,
     PieChart as PieChartIcon,
     Table as TableIcon,
-    ArrowRight
+    ArrowRight,
+    BrainCircuit,
+    Database as DatabaseIcon
 } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
@@ -76,16 +78,28 @@ interface DashboardProps {
         barChart: Array<{ name: string; value: number }>;
         pieChart: Array<{ name: string; value: number }>;
     };
+    chartTitles?: {
+        barChart?: string;
+        pieChart?: string;
+    };
+    chartDescriptions?: {
+        barChart?: string;
+        pieChart?: string;
+    };
     tableData?: Array<any>;
     availableColumns?: string[];
+    dataType?: 'ai' | 'raw';
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
-export default function Dashboard({ stats, connectedFile, chartData, tableData, availableColumns }: DashboardProps) {
+export default function Dashboard({ stats, connectedFile, chartData, chartTitles, chartDescriptions, tableData, availableColumns, dataType = 'raw' }: DashboardProps) {
     const [showDataNotification, setShowDataNotification] = React.useState(false);
     const [activeFilters, setActiveFilters] = React.useState<Record<string, string>>({});
     const [showAllFilters, setShowAllFilters] = React.useState(false);
+    const [isUpdating, setIsUpdating] = React.useState(false);
+    const [currentDataType, setCurrentDataType] = React.useState<'ai' | 'raw'>(dataType);
+    const [toastMessage, setToastMessage] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     React.useEffect(() => {
         if (connectedFile) {
@@ -93,6 +107,66 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
             setTimeout(() => setShowDataNotification(false), 5000);
         }
     }, [connectedFile]);
+
+    // Show AI insights notification if available
+    React.useEffect(() => {
+        if (stats.ai_insights && currentDataType === 'ai') {
+            setToastMessage({
+                type: 'success',
+                message: 'AI-enhanced widgets and charts are now active! Switch between AI Insights and Raw Data using the toggle above.'
+            });
+            setTimeout(() => setToastMessage(null), 5000);
+        }
+    }, [stats.ai_insights, currentDataType]);
+
+        const handleUpdateWidgets = async (dataType: 'ai' | 'raw') => {
+        // Don't update if already on the selected data type
+        if (currentDataType === dataType) {
+            return;
+        }
+
+        setIsUpdating(true);
+
+        try {
+            // Get the active file ID from the current connected file
+            if (!connectedFile) {
+                setToastMessage({ type: 'error', message: 'No connected file found' });
+                return;
+            }
+
+            const endpoint = dataType === 'ai'
+                ? `/ai/analyze-file/current`
+                : `/dashboard/update-raw-data/current`;
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setCurrentDataType(dataType);
+                setToastMessage({
+                    type: 'success',
+                    message: `Switched to ${dataType === 'ai' ? 'AI insights' : 'raw data'}!`
+                });
+                // Refresh the page to show updated data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                setToastMessage({ type: 'error', message: data.message || 'Failed to update dashboard' });
+            }
+        } catch (error) {
+            setToastMessage({ type: 'error', message: 'Network error occurred' });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     const handleFilterChange = (column: string, value: string) => {
         setActiveFilters(prev => {
@@ -290,23 +364,46 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
         <div className="space-y-6">
             {/* Welcome Message */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
-                <h2 className="text-2xl font-bold mb-2">Welcome back! 👋</h2>
-                <p className="text-blue-100">
-                    {connectedFile
-                        ? `Your dashboard is connected to ${connectedFile} with dynamic data from your uploaded file`
-                        : 'Upload an Excel file to see your data visualized in charts and tables'
-                    }
-                </p>
-                {!connectedFile && (
-                    <div className="mt-4">
-                        <Link href="/upload-files">
-                            <Button className="bg-white text-blue-600 hover:bg-gray-100">
-                                <Upload className="h-4 w-4 mr-2" />
-                                Upload Excel File
-                            </Button>
-                        </Link>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold mb-2">Welcome back! 👋</h2>
+                        <p className="text-blue-100">
+                            {connectedFile
+                                ? `Your dashboard is connected to ${connectedFile} with dynamic data from your uploaded file`
+                                : 'Upload an Excel file to see your data visualized in charts and tables'
+                            }
+                        </p>
+                        {!connectedFile && (
+                            <div className="mt-4">
+                                <Link href="/upload-files">
+                                    <Button className="bg-white text-blue-600 hover:bg-gray-100">
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Upload Excel File
+                                    </Button>
+                                </Link>
+                            </div>
+                        )}
                     </div>
-                )}
+
+                    {/* Data Source Indicator */}
+                    {connectedFile && (
+                        <div className="flex items-center space-x-2">
+                            <Badge variant="outline" className="bg-white/20 text-white border-white/30">
+                                {currentDataType === 'ai' ? (
+                                    <>
+                                        <BrainCircuit className="h-3 w-3 mr-1" />
+                                        AI Insights
+                                    </>
+                                ) : (
+                                    <>
+                                        <DatabaseIcon className="h-3 w-3 mr-1" />
+                                        Raw Data
+                                    </>
+                                )}
+                            </Badge>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* KPI Cards */}
@@ -415,10 +512,25 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
+                                <Card>
                     <CardHeader>
-                        <CardTitle>Performance Overview</CardTitle>
-                        <CardDescription>Data from your Excel file</CardDescription>
+                        <CardTitle className="flex items-center">
+                            {currentDataType === 'ai' ? (
+                                <BrainCircuit className="h-5 w-5 mr-2 text-blue-600" />
+                            ) : (
+                                <BarChart3 className="h-5 w-5 mr-2" />
+                            )}
+                            {currentDataType === 'ai'
+                                ? (chartTitles?.barChart || 'AI Analysis - Performance Overview')
+                                : 'Performance Overview'
+                            }
+                        </CardTitle>
+                        <CardDescription>
+                            {currentDataType === 'ai'
+                                ? (chartDescriptions?.barChart || 'Intelligent analysis of your data with AI insights')
+                                : 'Data from your Excel file'
+                            }
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {chartData && chartData.barChart && chartData.barChart.length > 0 ? (
@@ -455,10 +567,25 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
                     </CardContent>
                 </Card>
 
-                <Card>
+                                <Card>
                     <CardHeader>
-                        <CardTitle>Distribution</CardTitle>
-                        <CardDescription>Data breakdown from your file</CardDescription>
+                        <CardTitle className="flex items-center">
+                            {currentDataType === 'ai' ? (
+                                <BrainCircuit className="h-5 w-5 mr-2 text-blue-600" />
+                            ) : (
+                                <PieChart className="h-5 w-5 mr-2" />
+                            )}
+                            {currentDataType === 'ai'
+                                ? (chartTitles?.pieChart || 'AI Analysis - Data Distribution')
+                                : 'Distribution'
+                            }
+                        </CardTitle>
+                        <CardDescription>
+                            {currentDataType === 'ai'
+                                ? (chartDescriptions?.pieChart || 'Smart data breakdown with AI recommendations')
+                                : 'Data breakdown from your file'
+                            }
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {chartData && chartData.pieChart && chartData.pieChart.length > 0 ? (
@@ -660,29 +787,62 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
             <Head title="Excel Dashboard" />
 
             <DashboardLayout
-                title="Data Overview"
-                description="Welcome to your Excel Dashboard. Here's an overview of your data analytics."
+                showUpdateButton={!!connectedFile}
+                onUpdateWidgets={handleUpdateWidgets}
+                isUpdating={isUpdating}
+                currentDataType={currentDataType}
             >
-                {showDataNotification && (
-                    <div className="fixed top-4 right-4 z-50 p-4 bg-green-50 border border-green-200 rounded-lg shadow-lg max-w-sm">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <CheckCircle className="h-5 w-5 text-green-400" />
-                                </div>
-                                <div className="ml-3">
-                                    <p className="text-sm font-medium text-green-800">
-                                        Dashboard updated with data from {connectedFile}
-                                    </p>
+                {(showDataNotification || toastMessage) && (
+                    <div className="fixed top-4 right-4 z-50 p-4 border rounded-lg shadow-lg max-w-sm">
+                        {showDataNotification && (
+                            <div className="bg-green-50 border-green-200">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <div className="flex-shrink-0">
+                                            <CheckCircle className="h-5 w-5 text-green-400" />
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm font-medium text-green-800">
+                                                Dashboard updated with data from {connectedFile}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowDataNotification(false)}
+                                        className="text-green-400 hover:text-green-600 ml-3"
+                                    >
+                                        <XCircle className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setShowDataNotification(false)}
-                                className="text-green-400 hover:text-green-600 ml-3"
-                            >
-                                <XCircle className="h-4 w-4" />
-                            </button>
-                        </div>
+                        )}
+
+                        {toastMessage && (
+                            <div className={`${toastMessage.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <div className="flex-shrink-0">
+                                            {toastMessage.type === 'success' ? (
+                                                <CheckCircle className="h-5 w-5 text-green-400" />
+                                            ) : (
+                                                <AlertCircle className="h-5 w-5 text-red-400" />
+                                            )}
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className={`text-sm font-medium ${toastMessage.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                                                {toastMessage.message}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setToastMessage(null)}
+                                        className={`ml-3 ${toastMessage.type === 'success' ? 'text-green-400 hover:text-green-600' : 'text-red-400 hover:text-red-600'}`}
+                                    >
+                                        <XCircle className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
