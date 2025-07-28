@@ -35,6 +35,18 @@ class AIService
                 return null;
             }
 
+            // Validate that headers and rows are arrays
+            if (!is_array($headers) || !is_array($rows)) {
+                Log::error('Invalid data structure: headers and rows must be arrays');
+                return null;
+            }
+
+            // Debug: Log the structure of headers and first few rows
+            Log::info('Headers structure: ' . json_encode($headers));
+            if (!empty($rows)) {
+                Log::info('First row structure: ' . json_encode(array_slice($rows, 0, 1)));
+            }
+
             // Prepare data summary for AI analysis
             $dataSummary = $this->prepareDataSummary($headers, $rows);
 
@@ -49,6 +61,7 @@ class AIService
 
         } catch (\Exception $e) {
             Log::error('AI analysis failed: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return null;
         }
     }
@@ -63,20 +76,49 @@ class AIService
             'column_analysis' => []
         ];
 
-        // Analyze each column
+                // Analyze each column
         foreach ($headers as $header) {
-            $values = array_column($rows, $header);
-            $numericValues = array_filter($values, function($value) {
-                return is_numeric($value) || (is_string($value) && is_numeric(preg_replace('/[^\d.-]/', '', $value)));
-            });
+            // Skip empty headers
+            if (empty($header) || $header === null) {
+                continue;
+            }
 
-            $summary['column_analysis'][$header] = [
-                'total_values' => count($values),
-                'unique_values' => count(array_unique($values)),
-                'numeric_count' => count($numericValues),
-                'sample_values' => array_slice(array_unique($values), 0, 3),
-                'is_primarily_numeric' => count($numericValues) > count($values) * 0.7
-            ];
+            // Ensure header is a string
+            $headerKey = is_array($header) ? json_encode($header) : (string) $header;
+
+            try {
+                $values = array_column($rows, $header);
+
+                // Filter out null/empty values and ensure all values are strings
+                $values = array_filter($values, function($value) {
+                    return $value !== null && $value !== '';
+                });
+
+                $values = array_map(function($value) {
+                    if (is_array($value)) {
+                        return json_encode($value);
+                    } elseif (is_object($value)) {
+                        return (string) $value;
+                    } else {
+                        return (string) $value;
+                    }
+                }, $values);
+
+                $numericValues = array_filter($values, function($value) {
+                    return is_numeric($value) || (is_string($value) && is_numeric(preg_replace('/[^\d.-]/', '', $value)));
+                });
+
+                $summary['column_analysis'][$headerKey] = [
+                    'total_values' => count($values),
+                    'unique_values' => count(array_unique($values)),
+                    'numeric_count' => count($numericValues),
+                    'sample_values' => array_slice(array_unique($values), 0, 3),
+                    'is_primarily_numeric' => count($numericValues) > count($values) * 0.7
+                ];
+            } catch (\Exception $e) {
+                Log::warning("Error processing column '{$headerKey}': " . $e->getMessage());
+                continue;
+            }
         }
 
         return $summary;
@@ -125,12 +167,17 @@ class AIService
 
         private function buildAnalysisPrompt($dataSummary, $filename)
     {
+        // Ensure headers are properly formatted as strings
+        $headers = array_map(function($header) {
+            return is_array($header) ? json_encode($header) : (string) $header;
+        }, $dataSummary['headers']);
+
         return "Analyze this Excel data and provide comprehensive insights for a business dashboard including widgets and charts.
 
 File: {$filename}
 Total Rows: {$dataSummary['total_rows']}
 Total Columns: {$dataSummary['total_columns']}
-Headers: " . implode(', ', $dataSummary['headers']) . "
+Headers: " . implode(', ', $headers) . "
 
 Column Analysis:
 " . $this->formatColumnAnalysis($dataSummary['column_analysis']) . "
@@ -208,8 +255,13 @@ Focus on identifying sales, revenue, commission, recruiter, and performance-rela
     {
         $formatted = '';
         foreach ($columnAnalysis as $column => $analysis) {
-            $formatted .= "- {$column}: {$analysis['total_values']} values, {$analysis['unique_values']} unique, " .
-                         ($analysis['is_primarily_numeric'] ? 'numeric' : 'text') . "\n";
+            // Ensure all values are properly converted to strings
+            $totalValues = is_array($analysis['total_values']) ? count($analysis['total_values']) : $analysis['total_values'];
+            $uniqueValues = is_array($analysis['unique_values']) ? count($analysis['unique_values']) : $analysis['unique_values'];
+            $isNumeric = is_bool($analysis['is_primarily_numeric']) ? $analysis['is_primarily_numeric'] : false;
+
+            $formatted .= "- {$column}: {$totalValues} values, {$uniqueValues} unique, " .
+                         ($isNumeric ? 'numeric' : 'text') . "\n";
         }
         return $formatted;
     }
