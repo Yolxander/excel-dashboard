@@ -1,27 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import {
-    FileText,
-    BarChart3,
-    PieChart,
-    Table,
-    Settings,
-    CheckCircle,
-    Eye,
-    EyeOff,
-    ArrowLeft,
-    Save,
-    RefreshCw,
-    Database,
-    Link as LinkIcon,
-    Unlink,
-} from 'lucide-react';
+import { ArrowLeft, Database, BarChart3, PieChart, Table as TableIcon, Settings, Save, CheckCircle, RefreshCw, Link as LinkIcon, BrainCircuit, Sparkles, FileText } from 'lucide-react';
+import DashboardLayout from '@/Layouts/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
 
 interface UploadedFile {
@@ -74,6 +58,7 @@ export default function WidgetSelection({
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
     const { toast } = useToast();
 
     // Check if selected file is connected to dashboard
@@ -93,7 +78,7 @@ export default function WidgetSelection({
             case 'pie_chart':
                 return <PieChart className="h-4 w-4 text-purple-600" />;
             case 'table':
-                return <Table className="h-4 w-4 text-orange-600" />;
+                return <TableIcon className="h-4 w-4 text-orange-600" />;
             default:
                 return <FileText className="h-4 w-4 text-gray-600" />;
         }
@@ -256,6 +241,51 @@ export default function WidgetSelection({
         }
     };
 
+    const analyzeFileWithAI = async (file: UploadedFile) => {
+        setIsGeneratingInsights(true);
+        try {
+            const response = await fetch(`/ai/analyze-file/${file.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast({
+                    title: 'AI analysis completed successfully!',
+                    description: 'Enhanced widgets and charts are now available. Refreshing widgets...',
+                });
+
+                // Reload widgets for the file
+                await handleFileSelect(file);
+
+                toast({
+                    title: 'Widgets generated!',
+                    description: 'AI has generated widgets for your file. You can now select which ones to display.',
+                });
+            } else {
+                toast({
+                    title: 'AI analysis failed',
+                    description: data.message || 'Failed to generate insights for this file.',
+                    variant: 'destructive',
+                });
+            }
+        } catch (error) {
+            console.error('Error analyzing file with AI:', error);
+            toast({
+                title: 'Network error',
+                description: 'Failed to connect to AI service. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsGeneratingInsights(false);
+        }
+    };
+
     const formatFileSize = (bytes: number) => {
         const units = ['B', 'KB', 'MB', 'GB'];
         let size = bytes;
@@ -402,8 +432,53 @@ export default function WidgetSelection({
                                         </div>
                                     </div>
 
-                                    {/* KPI Widgets */}
-                                    {kpiWidgets.length > 0 && (
+                                    {/* Check if file has widgets */}
+                                    {widgets.length === 0 ? (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center">
+                                                    <BrainCircuit className="h-5 w-5 mr-2 text-blue-600" />
+                                                    No Widgets Available
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    This file doesn't have any widgets yet. Generate AI insights to create widgets for this file.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-center py-8">
+                                                    <div className="mb-4">
+                                                        <BrainCircuit className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                                            No Widgets Found
+                                                        </h3>
+                                                        <p className="text-gray-600 mb-6">
+                                                            This file hasn't been analyzed with AI yet. Generate insights to create widgets based on your data.
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        onClick={() => analyzeFileWithAI(selectedFile)}
+                                                        disabled={isGeneratingInsights}
+                                                        className="bg-blue-600 hover:bg-blue-700"
+                                                    >
+                                                        {isGeneratingInsights ? (
+                                                            <>
+                                                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                                                Generating Insights...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Sparkles className="h-4 w-4 mr-2" />
+                                                                Generate Insights
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ) : (
+                                        <>
+                                            {/* KPI Widgets */}
+                                            {kpiWidgets.length > 0 && (
                                         <Card>
                                             <CardHeader>
                                                 <CardTitle className="flex items-center justify-between">
@@ -544,7 +619,7 @@ export default function WidgetSelection({
                                         <Card>
                                             <CardHeader>
                                                 <CardTitle className="flex items-center">
-                                                    <Table className="h-5 w-5 mr-2" />
+                                                    <TableIcon className="h-5 w-5 mr-2" />
                                                     Table Widgets
                                                 </CardTitle>
                                             </CardHeader>
@@ -601,6 +676,8 @@ export default function WidgetSelection({
                                             )}
                                         </Button>
                                     </div>
+                                        </>
+                                    )}
                                 </div>
                             ) : (
                                 <Card>
