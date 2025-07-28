@@ -34,7 +34,8 @@ import {
     Table as TableIcon,
     ArrowRight,
     BrainCircuit,
-    Database as DatabaseIcon
+    Database as DatabaseIcon,
+    Sparkles
 } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
@@ -103,23 +104,33 @@ export default function Dashboard({ stats, connectedFile, chartData, chartTitles
 
     React.useEffect(() => {
         if (connectedFile) {
-            setShowDataNotification(true);
-            setTimeout(() => setShowDataNotification(false), 5000);
+            // Only show data notification if we haven't shown it before
+            const hasShownData = sessionStorage.getItem('data_notification_shown');
+            if (!hasShownData) {
+                setShowDataNotification(true);
+                setTimeout(() => setShowDataNotification(false), 5000);
+                sessionStorage.setItem('data_notification_shown', 'true');
+            }
         }
     }, [connectedFile]);
 
-    // Show AI insights notification if available
+        // Show AI insights notification only when first loading AI data
     React.useEffect(() => {
-        if (stats.ai_insights && currentDataType === 'ai') {
-            setToastMessage({
-                type: 'success',
-                message: 'AI-enhanced widgets and charts are now active! Switch between AI Insights and Raw Data using the toggle above.'
-            });
-            setTimeout(() => setToastMessage(null), 5000);
+        if (stats.ai_insights && currentDataType === 'ai' && !showDataNotification) {
+            // Only show if we haven't already shown a notification
+            const hasShownAI = sessionStorage.getItem('ai_insights_shown');
+            if (!hasShownAI) {
+                setToastMessage({
+                    type: 'success',
+                    message: 'AI-enhanced widgets and charts are now active! Switch between AI Insights and Raw Data using the toggle above.'
+                });
+                setTimeout(() => setToastMessage(null), 5000);
+                sessionStorage.setItem('ai_insights_shown', 'true');
+            }
         }
-    }, [stats.ai_insights, currentDataType]);
+    }, [stats.ai_insights, currentDataType, showDataNotification]);
 
-        const handleUpdateWidgets = async (dataType: 'ai' | 'raw') => {
+            const handleUpdateWidgets = async (dataType: 'ai' | 'raw') => {
         // Don't update if already on the selected data type
         if (currentDataType === dataType) {
             return;
@@ -154,6 +165,11 @@ export default function Dashboard({ stats, connectedFile, chartData, chartTitles
                     type: 'success',
                     message: `Switched to ${dataType === 'ai' ? 'AI insights' : 'raw data'}!`
                 });
+
+                // Clear session storage to allow fresh notifications after switch
+                sessionStorage.removeItem('ai_insights_shown');
+                sessionStorage.removeItem('data_notification_shown');
+
                 // Refresh the page to show updated data
                 setTimeout(() => {
                     window.location.reload();
@@ -448,67 +464,7 @@ export default function Dashboard({ stats, connectedFile, chartData, chartTitles
                 ))}
             </div>
 
-            {/* AI Insights Section */}
-            {stats.ai_insights && (
-                <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-                    <CardHeader>
-                        <CardTitle className="flex items-center text-blue-800">
-                            <Activity className="h-5 w-5 mr-2" />
-                            AI-Powered Insights
-                        </CardTitle>
-                        <CardDescription className="text-blue-600">
-                            Intelligent analysis of your data using AI/ML
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <h4 className="font-semibold text-blue-800">Data Analysis</h4>
-                                <div className="space-y-2">
-                                    {Object.entries(stats.ai_insights).map(([key, insight]) => (
-                                        <div key={key} className="flex items-center justify-between p-2 bg-white rounded border">
-                                            <span className="text-sm font-medium text-gray-700 capitalize">
-                                                {key.replace('_', ' ')}
-                                            </span>
-                                            <div className="text-right">
-                                                <div className="text-sm font-semibold text-blue-600">
-                                                    {insight.value?.toLocaleString() || 'N/A'}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {insight.description}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="space-y-3">
-                                <h4 className="font-semibold text-blue-800">AI Recommendations</h4>
-                                <div className="space-y-2">
-                                    <div className="p-3 bg-white rounded border">
-                                        <div className="flex items-center text-sm text-gray-700">
-                                            <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
-                                            <span>Data-driven insights from AI analysis</span>
-                                        </div>
-                                    </div>
-                                    <div className="p-3 bg-white rounded border">
-                                        <div className="flex items-center text-sm text-gray-700">
-                                            <Activity className="h-4 w-4 mr-2 text-blue-500" />
-                                            <span>Automated trend detection</span>
-                                        </div>
-                                    </div>
-                                    <div className="p-3 bg-white rounded border">
-                                        <div className="flex items-center text-sm text-gray-700">
-                                            <BarChart3 className="h-4 w-4 mr-2 text-purple-500" />
-                                            <span>Smart column identification</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -516,7 +472,7 @@ export default function Dashboard({ stats, connectedFile, chartData, chartTitles
                     <CardHeader>
                         <CardTitle className="flex items-center">
                             {currentDataType === 'ai' ? (
-                                <BrainCircuit className="h-5 w-5 mr-2 text-blue-600" />
+                                <Sparkles className="h-5 w-5 mr-2 text-blue-600" />
                             ) : (
                                 <BarChart3 className="h-5 w-5 mr-2" />
                             )}
@@ -571,7 +527,7 @@ export default function Dashboard({ stats, connectedFile, chartData, chartTitles
                     <CardHeader>
                         <CardTitle className="flex items-center">
                             {currentDataType === 'ai' ? (
-                                <BrainCircuit className="h-5 w-5 mr-2 text-blue-600" />
+                                <Sparkles className="h-5 w-5 mr-2 text-blue-600" />
                             ) : (
                                 <PieChart className="h-5 w-5 mr-2" />
                             )}
@@ -787,13 +743,15 @@ export default function Dashboard({ stats, connectedFile, chartData, chartTitles
             <Head title="Excel Dashboard" />
 
             <DashboardLayout
+                title="Data Overview"
+                description="View your Excel data insights and analytics"
                 showUpdateButton={!!connectedFile}
                 onUpdateWidgets={handleUpdateWidgets}
                 isUpdating={isUpdating}
                 currentDataType={currentDataType}
             >
                 {(showDataNotification || toastMessage) && (
-                    <div className="fixed top-4 right-4 z-50 p-4 border rounded-lg shadow-lg max-w-sm">
+                    <div className="fixed bottom-4 right-4 z-50 p-4 border rounded-lg shadow-lg max-w-sm">
                         {showDataNotification && (
                             <div className="bg-green-50 border-green-200">
                                 <div className="flex items-center justify-between">

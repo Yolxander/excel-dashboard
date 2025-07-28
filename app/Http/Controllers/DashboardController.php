@@ -27,6 +27,7 @@ class DashboardController extends Controller
         $stats = [];
         $chartData = [];
         $tableData = [];
+        $aiInsights = null;
 
         if ($activeWidget && $activeWidget->uploadedFile && $activeWidget->uploadedFile->processed_data) {
             $file = $activeWidget->uploadedFile;
@@ -74,8 +75,8 @@ class DashboardController extends Controller
             'stats' => $stats,
             'connectedFile' => $connectedFile,
             'chartData' => $chartData,
-            'chartTitles' => $this->getChartTitles($aiInsights),
-            'chartDescriptions' => $this->getChartDescriptions($aiInsights),
+            'chartTitles' => $aiInsights ? $this->getChartTitles($aiInsights) : null,
+            'chartDescriptions' => $aiInsights ? $this->getChartDescriptions($aiInsights) : null,
             'tableData' => $tableData,
             'dataType' => $aiInsights && isset($aiInsights['widget_insights']) ? 'ai' : 'raw',
             'availableColumns' => $activeWidget && $activeWidget->uploadedFile && $activeWidget->uploadedFile->processed_data

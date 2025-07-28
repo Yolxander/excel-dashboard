@@ -508,6 +508,11 @@ Focus on identifying sales, revenue, commission, recruiter, and performance-rela
         $widgetInsights = $insights['widget_insights'];
         $chartRecommendations = $insights['chart_recommendations'] ?? [];
 
+        // Save AI insights to the file
+        $file->update([
+            'ai_insights' => $insights
+        ]);
+
         // Update each widget with AI insights
         $widgets = DashboardWidget::where('uploaded_file_id', $file->id)
             ->where('is_active', true)

@@ -150,21 +150,17 @@ export default function CombineFiles({ uploadedFiles, connectedWidgets }: Combin
     const completedFiles = uploadedFiles.filter(file => file.status === 'completed');
 
     return (
-        <DashboardLayout>
+        <DashboardLayout
+            title="Combine Files"
+            description="Select multiple Excel files to combine them into a single dataset"
+        >
             <Head title="Combine Files" />
 
             <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Combine Files</h1>
-                        <p className="text-gray-600 mt-2">Select multiple Excel files to combine them into a single dataset</p>
-                    </div>
-                </div>
 
                 {/* Toast Message */}
                 {toastMessage && (
-                    <div className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-sm ${
+                    <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-sm ${
                         toastMessage.type === 'success'
                             ? 'bg-green-50 border border-green-200 text-green-800'
                             : 'bg-red-50 border border-red-200 text-red-800'

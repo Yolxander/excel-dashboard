@@ -15,10 +15,12 @@ class UploadedFile extends Model
         'status',
         'processed_data',
         'error_message',
+        'ai_insights',
     ];
 
     protected $casts = [
         'processed_data' => 'array',
+        'ai_insights' => 'array',
     ];
 
     public function getFormattedFileSizeAttribute()

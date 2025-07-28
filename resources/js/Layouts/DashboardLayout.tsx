@@ -10,18 +10,21 @@ import {
     RefreshCw,
     Settings,
     BrainCircuit,
-    Database as DatabaseIcon
+    Database as DatabaseIcon,
+    Sparkles
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
+    title?: string;
+    description?: string;
     showUpdateButton?: boolean;
     onUpdateWidgets?: (dataType: 'ai' | 'raw') => void;
     isUpdating?: boolean;
     currentDataType?: 'ai' | 'raw';
 }
 
-export default function DashboardLayout({ children, showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw' }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, title = 'Dashboard', description = 'Manage your data and insights', showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw' }: DashboardLayoutProps) {
     const { url } = usePage();
 
     const sidebarItems = [
@@ -91,8 +94,8 @@ export default function DashboardLayout({ children, showUpdateButton = false, on
                         <div className="py-6 flex items-center justify-between">
                             {/* Left side - Page title */}
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-                                <p className="text-sm text-gray-600">Manage your data and insights</p>
+                                <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+                                <p className="text-sm text-gray-600">{description}</p>
                             </div>
 
                                                         {/* Right side - Data Source Switch */}
@@ -128,7 +131,7 @@ export default function DashboardLayout({ children, showUpdateButton = false, on
                                             {isUpdating && currentDataType === 'ai' ? (
                                                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                                             ) : (
-                                                <BrainCircuit className="h-4 w-4 mr-2" />
+                                                <Sparkles className="h-4 w-4 mr-2" />
                                             )}
                                             AI Insights
                                         </button>

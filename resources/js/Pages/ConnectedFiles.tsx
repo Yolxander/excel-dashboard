@@ -24,7 +24,9 @@ import {
     Trash2,
     Eye,
     Download,
-    BrainCircuit
+    BrainCircuit,
+    Sparkles,
+    Info
 } from 'lucide-react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 
@@ -38,6 +40,7 @@ interface UploadedFile {
     status: 'processing' | 'completed' | 'failed';
     processed_data?: any;
     error_message?: string;
+    ai_insights?: any;
     created_at: string;
     updated_at: string;
 }
@@ -65,6 +68,8 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
     const [disconnectingFile, setDisconnectingFile] = React.useState<number | null>(null);
     const [analyzingFile, setAnalyzingFile] = React.useState<number | null>(null);
     const [toastMessage, setToastMessage] = React.useState<{ type: 'success' | 'error', message: string } | null>(null);
+    const [selectedFileForInsights, setSelectedFileForInsights] = React.useState<UploadedFile | null>(null);
+    const [showInsightsModal, setShowInsightsModal] = React.useState(false);
 
     const connectFile = async (fileId: number) => {
         setConnectingFile(fileId);
@@ -214,12 +219,12 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
             <Head title="Connected Files" />
 
             <DashboardLayout
-                title="Connected Files"
-                description="Manage your uploaded files and their dashboard connections"
+                title="File Management"
+                description="Upload, connect, and analyze your Excel files with AI insights"
             >
                 {/* Toast Notification */}
                 {toastMessage && (
-                    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border shadow-lg max-w-sm ${
+                    <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-lg border shadow-lg max-w-sm ${
                         toastMessage.type === 'success'
                             ? 'bg-green-50 border-green-200 text-green-800'
                             : 'bg-red-50 border-red-200 text-red-800'
@@ -258,9 +263,9 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                 <CardContent>
                             {uploadedFiles.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {uploadedFiles.map((file) => (
-                                        <Card key={file.id} className="relative">
-                                            <CardHeader className="pb-3">
+                                                                        {uploadedFiles.map((file) => (
+                                        <Card key={file.id} className="relative min-h-[200px] flex flex-col">
+                                            <CardHeader className="pb-4 flex-shrink-0">
                                         <div className="flex items-center justify-between">
                                                     <div className="flex items-center space-x-2">
                                                         {getFileIcon(file.file_type)}
@@ -279,13 +284,22 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                     )}
                                         </div>
                                                 <div className="flex items-center justify-between mt-2">
-                                                    {getStatusBadge(file.status)}
+                                                    <div className="flex items-center space-x-2">
+                                                        {getStatusBadge(file.status)}
+                                                        {file.ai_insights && (
+                                                            <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                                                                <Sparkles className="h-3 w-3 mr-1" />
+                                                                AI Analyzed
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                     <span className="text-xs text-gray-500">
                                                         {new Date(file.created_at).toLocaleDateString()}
                                                     </span>
                                         </div>
                                             </CardHeader>
-                                            <CardContent className="pt-0">
+                                            <div className="flex-1"></div>
+                                            <CardContent className="pt-0 pb-2 mt-auto">
                                                 <div className="flex space-x-2">
                                                     {file.status === 'completed' && (
                                                         <>
@@ -323,18 +337,33 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                         </>
                                                     )}
                                                                                                                                     <Button
-                                                variant="outline"
+                                                variant={file.ai_insights ? "default" : "outline"}
                                                 size="sm"
                                                 onClick={() => analyzeFileWithAI(file.id)}
                                                 disabled={analyzingFile === file.id}
-                                                title="Analyze with AI"
+                                                title={file.ai_insights ? "Re-analyze with AI" : "Analyze with AI"}
+                                                className={file.ai_insights ? "bg-purple-600 hover:bg-purple-700" : ""}
                                             >
                                                 {analyzingFile === file.id ? (
                                                     <Clock className="h-4 w-4 animate-spin" />
                                                 ) : (
-                                                    <BrainCircuit className="h-4 w-4" />
+                                                    <Sparkles className="h-4 w-4" />
                                                 )}
                                             </Button>
+
+                                            {file.ai_insights && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setSelectedFileForInsights(file);
+                                                        setShowInsightsModal(true);
+                                                    }}
+                                                    title="View AI Insights"
+                                                >
+                                                    <Info className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -438,6 +467,94 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
 
                     </div>
                 </DashboardLayout>
+
+                {/* AI Insights Modal */}
+                {showInsightsModal && selectedFileForInsights && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-gray-900">AI-Powered Insights</h2>
+                                        <p className="text-gray-600">Intelligent analysis of your data using AI/ML</p>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowInsightsModal(false)}
+                                    >
+                                        <XCircle className="h-4 w-4" />
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Data Analysis Section */}
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Analysis</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {selectedFileForInsights.ai_insights?.widget_insights &&
+                                                Object.entries(selectedFileForInsights.ai_insights.widget_insights).map(([key, insight]: [string, any]) => (
+                                                    <div key={key} className="bg-gray-50 rounded-lg p-4">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className="font-medium text-gray-900 capitalize">
+                                                                {key.replace(/_/g, ' ')}
+                                                            </h4>
+                                                            <span className="text-2xl font-bold text-blue-600">
+                                                                {insight.value}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600">
+                                                            {insight.description}
+                                                        </p>
+                                                        {insight.source_column && (
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Source: {insight.source_column}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+
+                                    {/* AI Recommendations Section */}
+                                    {selectedFileForInsights.ai_insights?.data_insights && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Recommendations</h3>
+                                            <div className="bg-blue-50 rounded-lg p-4">
+                                                <p className="text-sm text-blue-800 mb-2">
+                                                    {selectedFileForInsights.ai_insights.data_insights}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Chart Recommendations */}
+                                    {selectedFileForInsights.ai_insights?.chart_recommendations && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Chart Analysis</h3>
+                                            <div className="space-y-4">
+                                                {Object.entries(selectedFileForInsights.ai_insights.chart_recommendations).map(([chartType, config]: [string, any]) => (
+                                                    <div key={chartType} className="bg-gray-50 rounded-lg p-4">
+                                                        <h4 className="font-medium text-gray-900 mb-2 capitalize">
+                                                            {chartType.replace(/_/g, ' ')} Analysis
+                                                        </h4>
+                                                        <p className="text-sm text-gray-600 mb-2">
+                                                            {config.title}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {config.description}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </>
         );
     }
