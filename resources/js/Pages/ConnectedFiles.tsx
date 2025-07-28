@@ -47,12 +47,13 @@ interface UploadedFile {
 
 interface DashboardWidget {
     id: number;
-    widget_type: string;
+    uploaded_file_id: number;
     widget_name: string;
+    widget_type: string;
     widget_config?: any;
-    uploaded_file_id?: number;
-    is_active: boolean;
+    is_displayed: boolean;
     display_order: number;
+    ai_insights?: any;
     uploaded_file?: UploadedFile;
     created_at: string;
     updated_at: string;
@@ -211,7 +212,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
     };
 
     const isFileConnected = (fileId: number) => {
-        return dashboardWidgets.some(widget => widget.uploaded_file_id === fileId && widget.is_active);
+        return dashboardWidgets.some(widget => widget.uploaded_file_id === fileId && widget.is_displayed);
     };
 
     return (
@@ -435,7 +436,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {widget.is_active ? (
+                                                    {widget.is_displayed ? (
                                                         <Badge variant="default" className="bg-green-100 text-green-800">
                                                             <CheckCircle className="h-3 w-3 mr-1" />
                                                             Active
@@ -496,8 +497,8 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                 Object.entries(selectedFileForInsights.ai_insights.widget_insights).map(([key, insight]: [string, any]) => (
                                                     <div key={key} className="bg-gray-50 rounded-lg p-4">
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <h4 className="font-medium text-gray-900 capitalize">
-                                                                {key.replace(/_/g, ' ')}
+                                                            <h4 className="font-medium text-gray-900">
+                                                                {insight.widget_name || key.replace(/_/g, ' ')}
                                                             </h4>
                                                             <span className="text-2xl font-bold text-blue-600">
                                                                 {insight.value}
@@ -511,11 +512,53 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                                 Source: {insight.source_column}
                                                             </p>
                                                         )}
+                                                        {insight.widget_type && (
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Type: {insight.widget_type.replace('_', ' ')}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 ))
                                             }
                                         </div>
                                     </div>
+
+                                    {/* Widget Recommendations Section */}
+                                    {selectedFileForInsights.ai_insights?.widget_recommendations && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Widget Recommendations</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {selectedFileForInsights.ai_insights.widget_recommendations.map((recommendation: any, index: number) => (
+                                                    <div key={index} className="bg-green-50 rounded-lg p-4 border border-green-200">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className="font-medium text-green-900">
+                                                                {recommendation.widget_name}
+                                                            </h4>
+                                                            <Badge variant="outline" className="text-xs">
+                                                                {recommendation.widget_type.replace('_', ' ')}
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="text-sm text-green-800 mb-2">
+                                                            {recommendation.description}
+                                                        </p>
+                                                        {recommendation.source_columns && (
+                                                            <p className="text-xs text-green-600">
+                                                                Source: {recommendation.source_columns.join(', ')}
+                                                            </p>
+                                                        )}
+                                                        {recommendation.calculation_method && (
+                                                            <p className="text-xs text-green-600 mt-1">
+                                                                Method: {recommendation.calculation_method}
+                                                            </p>
+                                                        )}
+                                                        <p className="text-xs text-green-500 mt-2">
+                                                            Priority: {recommendation.priority || 'N/A'}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* AI Recommendations Section */}
                                     {selectedFileForInsights.ai_insights?.data_insights && (

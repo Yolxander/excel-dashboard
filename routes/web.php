@@ -49,3 +49,8 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard Update Routes
     Route::post('/dashboard/update-raw-data/current', [DashboardController::class, 'updateWithRawData']);
 });
+
+Route::get('/widget-selection', [App\Http\Controllers\WidgetSelectionController::class, 'index'])->name('widget-selection');
+Route::get('/widget-selection/widgets/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetsForFile'])->name('widget-selection.widgets');
+Route::post('/widget-selection/update', [App\Http\Controllers\WidgetSelectionController::class, 'updateWidgetSelection'])->name('widget-selection.update');
+Route::post('/widget-selection/connect/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'connectFile'])->name('widget-selection.connect');

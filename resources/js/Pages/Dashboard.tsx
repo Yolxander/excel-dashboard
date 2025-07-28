@@ -41,38 +41,27 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 
+interface FileWidgetConnection {
+    id: number;
+    uploaded_file_id: number;
+    widget_name: string;
+    widget_type: string;
+    widget_config?: any;
+    is_displayed: boolean;
+    display_order: number;
+    ai_insights?: any;
+    uploaded_file?: any;
+    created_at: string;
+    updated_at: string;
+}
+
 interface DashboardProps {
     stats: {
         totalSales: number;
         activeRecruiters: number;
         targetAchievement: number;
         avgCommission: number;
-        ai_insights?: {
-            total_sales?: {
-                value: number;
-                trend: string;
-                description: string;
-                source_column?: string;
-            };
-            active_recruiters?: {
-                value: number;
-                trend: string;
-                description: string;
-                source_column?: string;
-            };
-            target_achievement?: {
-                value: number;
-                trend: string;
-                description: string;
-                calculation_method?: string;
-            };
-            avg_commission?: {
-                value: number;
-                trend: string;
-                description: string;
-                calculation_method?: string;
-            };
-        };
+        ai_insights?: any;
     };
     connectedFile?: string;
     chartData?: {
@@ -90,11 +79,22 @@ interface DashboardProps {
     tableData?: Array<any>;
     availableColumns?: string[];
     dataType?: 'ai' | 'raw';
+    displayedWidgets?: FileWidgetConnection[];
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
-export default function Dashboard({ stats, connectedFile, chartData, chartTitles, chartDescriptions, tableData, availableColumns, dataType = 'raw' }: DashboardProps) {
+export default function Dashboard({
+    stats,
+    connectedFile,
+    chartData,
+    chartTitles,
+    chartDescriptions,
+    tableData,
+    availableColumns,
+    dataType = 'raw',
+    displayedWidgets = []
+}: DashboardProps) {
     const [showDataNotification, setShowDataNotification] = React.useState(false);
     const [activeFilters, setActiveFilters] = React.useState<Record<string, string>>({});
     const [showAllFilters, setShowAllFilters] = React.useState(false);
@@ -204,44 +204,73 @@ export default function Dashboard({ stats, connectedFile, chartData, chartTitles
         ? availableColumns.slice(0, 3)
         : availableColumns;
 
-    const kpiCards = [
-        {
-            title: 'Total Sales',
-            value: `$${stats.totalSales.toLocaleString()}`,
-            icon: DollarSign,
-            description: stats.ai_insights?.total_sales?.description || 'This month',
-            trend: stats.ai_insights?.total_sales?.trend || '+12%',
+    const getWidgetIcon = (widgetType: string) => {
+        switch (widgetType) {
+            case 'kpi':
+                return DollarSign;
+            case 'bar_chart':
+                return BarChart3;
+            case 'pie_chart':
+                return PieChartIcon;
+            case 'table':
+                return TableIcon;
+            default:
+                return Activity;
+        }
+    };
+
+    const getWidgetValue = (widget: FileWidgetConnection) => {
+        const aiInsights = widget.ai_insights;
+        if (!aiInsights) return '0';
+
+        const value = aiInsights.value || 0;
+
+        // Format based on widget name
+        if (widget.widget_name.toLowerCase().includes('total') || widget.widget_name.toLowerCase().includes('sales')) {
+            return `$${value.toLocaleString()}`;
+        } else if (widget.widget_name.toLowerCase().includes('percentage') || widget.widget_name.toLowerCase().includes('achievement')) {
+            return `${value}%`;
+        } else {
+            return value.toString();
+        }
+    };
+
+    const getWidgetDescription = (widget: FileWidgetConnection) => {
+        const aiInsights = widget.ai_insights;
+        if (aiInsights?.description) {
+            return aiInsights.description;
+        }
+
+        // Default descriptions based on widget name
+        if (widget.widget_name.toLowerCase().includes('total')) {
+            return 'Total value';
+        } else if (widget.widget_name.toLowerCase().includes('unique')) {
+            return 'Unique count';
+        } else if (widget.widget_name.toLowerCase().includes('average')) {
+            return 'Average value';
+        } else {
+            return 'Data metric';
+        }
+    };
+
+    const getWidgetTrend = (widget: FileWidgetConnection) => {
+        const aiInsights = widget.ai_insights;
+        return aiInsights?.trend || '+0%';
+    };
+
+    // Create KPI cards from displayed widgets
+    const kpiCards = displayedWidgets
+        .filter(widget => widget.widget_type === 'kpi')
+        .map(widget => ({
+            title: widget.widget_name,
+            value: getWidgetValue(widget),
+            icon: getWidgetIcon(widget.widget_type),
+            description: getWidgetDescription(widget),
+            trend: getWidgetTrend(widget),
             trendUp: true,
-            aiSource: stats.ai_insights?.total_sales?.source_column,
-        },
-        {
-            title: 'Active Recruiters',
-            value: stats.activeRecruiters.toString(),
-            icon: Users,
-            description: stats.ai_insights?.active_recruiters?.description || 'Currently active',
-            trend: stats.ai_insights?.active_recruiters?.trend || '+5%',
-            trendUp: true,
-            aiSource: stats.ai_insights?.active_recruiters?.source_column,
-        },
-        {
-            title: 'Target Achievement',
-            value: `${stats.targetAchievement}%`,
-            icon: TrendingUp,
-            description: stats.ai_insights?.target_achievement?.description || 'Monthly goal',
-            trend: stats.ai_insights?.target_achievement?.trend || '+8%',
-            trendUp: true,
-            aiMethod: stats.ai_insights?.target_achievement?.calculation_method,
-        },
-        {
-            title: 'Avg Commission',
-            value: `$${stats.avgCommission}`,
-            icon: Activity,
-            description: stats.ai_insights?.avg_commission?.description || 'Per recruiter',
-            trend: stats.ai_insights?.avg_commission?.trend || '+3%',
-            trendUp: true,
-            aiMethod: stats.ai_insights?.avg_commission?.calculation_method,
-        },
-    ];
+            aiSource: widget.ai_insights?.source_column,
+            aiMethod: widget.ai_insights?.calculation_method,
+        }));
 
     // Chart configurations for shadcn
     const barChartConfig = {
@@ -468,125 +497,99 @@ export default function Dashboard({ stats, connectedFile, chartData, chartTitles
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            {currentDataType === 'ai' ? (
-                                <Sparkles className="h-5 w-5 mr-2 text-blue-600" />
-                            ) : (
-                                <BarChart3 className="h-5 w-5 mr-2" />
-                            )}
-                            {currentDataType === 'ai'
-                                ? (chartTitles?.barChart || 'AI Analysis - Performance Overview')
-                                : 'Performance Overview'
-                            }
-                        </CardTitle>
-                        <CardDescription>
-                            {currentDataType === 'ai'
-                                ? (chartDescriptions?.barChart || 'Intelligent analysis of your data with AI insights')
-                                : 'Data from your Excel file'
-                            }
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {chartData && chartData.barChart && chartData.barChart.length > 0 ? (
-                            <ChartContainer config={barChartConfig}>
-                                <BarChart data={chartData.barChart}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <ChartTooltip
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                return (
-                                                    <ChartTooltipContent
-                                                        payload={payload}
-                                                        label={payload[0].payload.name}
-                                                    />
-                                                )
-                                            }
-                                            return null
-                                        }}
-                                    />
-                                    <Bar dataKey="value" fill="hsl(var(--chart-1))" />
-                                </BarChart>
-                            </ChartContainer>
-                        ) : (
-                            <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-                                <div className="text-center">
-                                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-500">No chart data available</p>
-                                    <p className="text-sm text-gray-400">Upload an Excel file to see charts</p>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            {currentDataType === 'ai' ? (
-                                <Sparkles className="h-5 w-5 mr-2 text-blue-600" />
-                            ) : (
-                                <PieChart className="h-5 w-5 mr-2" />
-                            )}
-                            {currentDataType === 'ai'
-                                ? (chartTitles?.pieChart || 'AI Analysis - Data Distribution')
-                                : 'Distribution'
-                            }
-                        </CardTitle>
-                        <CardDescription>
-                            {currentDataType === 'ai'
-                                ? (chartDescriptions?.pieChart || 'Smart data breakdown with AI recommendations')
-                                : 'Data breakdown from your file'
-                            }
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {chartData && chartData.pieChart && chartData.pieChart.length > 0 ? (
-                            <ChartContainer config={pieChartConfig}>
-                                <RechartsPieChart>
-                                    <Pie
-                                        data={chartData.pieChart}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                        outerRadius={80}
-                                        fill="hsl(var(--chart-1))"
-                                        dataKey="value"
-                                    >
-                                        {chartData.pieChart.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <ChartTooltip
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                return (
-                                                    <ChartTooltipContent
-                                                        payload={payload}
-                                                        label={payload[0].payload.name}
-                                                    />
-                                                )
-                                            }
-                                            return null
-                                        }}
-                                    />
-                                </RechartsPieChart>
-                            </ChartContainer>
-                        ) : (
-                            <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-                                <div className="text-center">
-                                    <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-500">No chart data available</p>
-                                    <p className="text-sm text-gray-400">Upload an Excel file to see charts</p>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                {displayedWidgets
+                    .filter(widget => widget.widget_type === 'bar_chart' || widget.widget_type === 'pie_chart')
+                    .map((widget, index) => (
+                        <Card key={widget.id}>
+                            <CardHeader>
+                                <CardTitle className="flex items-center">
+                                    {currentDataType === 'ai' ? (
+                                        <Sparkles className="h-5 w-5 mr-2 text-blue-600" />
+                                    ) : (
+                                        getWidgetIcon(widget.widget_type) === BarChart3 ? (
+                                            <BarChart3 className="h-5 w-5 mr-2" />
+                                        ) : (
+                                            <PieChart className="h-5 w-5 mr-2" />
+                                        )
+                                    )}
+                                    {widget.widget_name}
+                                </CardTitle>
+                                <CardDescription>
+                                    {widget.widget_config?.description ||
+                                        (widget.widget_type === 'bar_chart' ? 'Bar chart visualization' : 'Pie chart visualization')}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {widget.widget_type === 'bar_chart' && chartData && chartData.barChart && chartData.barChart.length > 0 ? (
+                                    <ChartContainer config={barChartConfig}>
+                                        <BarChart data={chartData.barChart}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="name" />
+                                            <YAxis />
+                                            <ChartTooltip
+                                                content={({ active, payload }) => {
+                                                    if (active && payload && payload.length) {
+                                                        return (
+                                                            <ChartTooltipContent
+                                                                payload={payload}
+                                                                label={payload[0].payload.name}
+                                                            />
+                                                        )
+                                                    }
+                                                    return null
+                                                }}
+                                            />
+                                            <Bar dataKey="value" fill="hsl(var(--chart-1))" />
+                                        </BarChart>
+                                    </ChartContainer>
+                                ) : widget.widget_type === 'pie_chart' && chartData && chartData.pieChart && chartData.pieChart.length > 0 ? (
+                                    <ChartContainer config={pieChartConfig}>
+                                        <RechartsPieChart>
+                                            <Pie
+                                                data={chartData.pieChart}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                outerRadius={80}
+                                                fill="hsl(var(--chart-1))"
+                                                dataKey="value"
+                                            >
+                                                {chartData.pieChart.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <ChartTooltip
+                                                content={({ active, payload }) => {
+                                                    if (active && payload && payload.length) {
+                                                        return (
+                                                            <ChartTooltipContent
+                                                                payload={payload}
+                                                                label={payload[0].payload.name}
+                                                            />
+                                                        )
+                                                    }
+                                                    return null
+                                                }}
+                                            />
+                                        </RechartsPieChart>
+                                    </ChartContainer>
+                                ) : (
+                                    <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+                                        <div className="text-center">
+                                            {widget.widget_type === 'bar_chart' ? (
+                                                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                            ) : (
+                                                <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                            )}
+                                            <p className="text-gray-500">No chart data available</p>
+                                            <p className="text-sm text-gray-400">Upload an Excel file to see charts</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    ))}
             </div>
 
             {/* Filters */}

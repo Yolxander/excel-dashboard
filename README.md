@@ -7,6 +7,61 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+# Excel Dashboard
+
+A modern Laravel application with React frontend for managing and analyzing Excel data with AI-powered insights.
+
+## Features
+
+- **Authentication System**: Secure login and registration with Laravel's built-in authentication
+- **File Management**: Upload and manage Excel files
+- **Data Analysis**: AI-powered insights and data visualization
+- **Dashboard**: Real-time data overview with charts and statistics
+- **Modern UI**: Beautiful, responsive interface built with React and Tailwind CSS
+
+## Authentication
+
+The application includes a complete authentication system:
+
+- **Login Page**: `/login` - Sign in with email and password
+- **Register Page**: `/register` - Create a new account
+- **Protected Routes**: All dashboard routes require authentication
+- **Logout**: Available in the dashboard header
+
+### Getting Started
+
+1. **Install Dependencies**:
+   ```bash
+   composer install
+   npm install
+   ```
+
+2. **Environment Setup**:
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+3. **Database Setup**:
+   ```bash
+   php artisan migrate
+   ```
+
+4. **Build Assets**:
+   ```bash
+   npm run build
+   ```
+
+5. **Start the Server**:
+   ```bash
+   php artisan serve
+   ```
+
+6. **Access the Application**:
+   - Visit `http://localhost:8000`
+   - You'll be redirected to `/login` if not authenticated
+   - Register a new account or login to access the dashboard
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

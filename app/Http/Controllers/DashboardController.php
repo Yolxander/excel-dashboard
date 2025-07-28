@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\UploadedFile;
-use App\Models\DashboardWidget;
+use App\Models\FileWidgetConnection;
 use Illuminate\Support\Facades\Log;
 use App\Services\AIService;
 
@@ -13,15 +13,15 @@ class DashboardController extends Controller
 {
         public function index()
     {
-        // Get the most recently connected file from dashboard widgets
-        $activeWidget = DashboardWidget::with('uploadedFile')
-            ->where('is_active', true)
+        // Get the currently displayed widgets
+        $displayedWidgets = FileWidgetConnection::with('uploadedFile')
+            ->where('is_displayed', true)
             ->whereNotNull('uploaded_file_id')
             ->whereHas('uploadedFile', function($query) {
                 $query->where('status', 'completed');
             })
-            ->orderBy('updated_at', 'desc')
-            ->first();
+            ->orderBy('display_order')
+            ->get();
 
         $connectedFile = null;
         $stats = [];
@@ -29,12 +29,12 @@ class DashboardController extends Controller
         $tableData = [];
         $aiInsights = null;
 
-        if ($activeWidget && $activeWidget->uploadedFile && $activeWidget->uploadedFile->processed_data) {
-            $file = $activeWidget->uploadedFile;
+        if ($displayedWidgets->isNotEmpty()) {
+            $file = $displayedWidgets->first()->uploadedFile;
             $data = $file->processed_data;
             Log::info('Using data from connected file: ' . $file->original_filename);
 
-                        // Try to get AI-enhanced stats first
+            // Try to get AI-enhanced stats first
             $aiService = new AIService();
             $aiInsights = $aiService->analyzeFileData($file);
 
@@ -53,7 +53,7 @@ class DashboardController extends Controller
 
             Log::info('Generated dynamic data for dashboard from connected file');
         } else {
-            Log::info('No connected files found, showing welcome state');
+            Log::info('No displayed widgets found, showing welcome state');
             // When no file is connected, pass empty data to show welcome state
             $stats = [
                 'totalSales' => 0,
@@ -79,9 +79,10 @@ class DashboardController extends Controller
             'chartDescriptions' => $aiInsights ? $this->getChartDescriptions($aiInsights) : null,
             'tableData' => $tableData,
             'dataType' => $aiInsights && isset($aiInsights['widget_insights']) ? 'ai' : 'raw',
-            'availableColumns' => $activeWidget && $activeWidget->uploadedFile && $activeWidget->uploadedFile->processed_data
-                ? $activeWidget->uploadedFile->processed_data['headers'] ?? []
+            'availableColumns' => $displayedWidgets->isNotEmpty() && $displayedWidgets->first()->uploadedFile && $displayedWidgets->first()->uploadedFile->processed_data
+                ? $displayedWidgets->first()->uploadedFile->processed_data['headers'] ?? []
                 : [],
+            'displayedWidgets' => $displayedWidgets,
         ];
 
         Log::info('Rendering dashboard with props: ' . json_encode($props));
@@ -93,12 +94,31 @@ class DashboardController extends Controller
     {
         Log::info('Generating stats from AI insights: ' . json_encode($widgetInsights));
 
+        // Initialize default stats
         $stats = [
-            'totalSales' => $widgetInsights['total_sales']['value'] ?? 0,
-            'activeRecruiters' => $widgetInsights['active_recruiters']['value'] ?? 0,
-            'targetAchievement' => $widgetInsights['target_achievement']['value'] ?? 0,
-            'avgCommission' => $widgetInsights['avg_commission']['value'] ?? 0,
+            'totalSales' => 0,
+            'activeRecruiters' => 0,
+            'targetAchievement' => 0,
+            'avgCommission' => 0,
         ];
+
+        // Map AI widget insights to dashboard stats
+        foreach ($widgetInsights as $key => $insight) {
+            $widgetName = $insight['widget_name'] ?? $key;
+            $widgetType = $insight['widget_type'] ?? 'kpi';
+            $value = $insight['value'] ?? 0;
+
+            // Map based on widget name or type
+            if (strpos(strtolower($widgetName), 'total') !== false || strpos(strtolower($widgetName), 'sales') !== false) {
+                $stats['totalSales'] = $value;
+            } elseif (strpos(strtolower($widgetName), 'recruiter') !== false || strpos(strtolower($widgetName), 'unique') !== false) {
+                $stats['activeRecruiters'] = $value;
+            } elseif (strpos(strtolower($widgetName), 'target') !== false || strpos(strtolower($widgetName), 'achievement') !== false) {
+                $stats['targetAchievement'] = $value;
+            } elseif (strpos(strtolower($widgetName), 'commission') !== false || strpos(strtolower($widgetName), 'average') !== false) {
+                $stats['avgCommission'] = $value;
+            }
+        }
 
         // Store AI insights for frontend display
         $stats['ai_insights'] = $widgetInsights;
@@ -588,11 +608,11 @@ class DashboardController extends Controller
         ];
     }
 
-    public function analyzeCurrentFileWithAI(Request $request)
+    public function regenerateAIInsights(Request $request)
     {
         // Get the most recently connected file from dashboard widgets
-        $activeWidget = DashboardWidget::with('uploadedFile')
-            ->where('is_active', true)
+        $activeWidget = FileWidgetConnection::with('uploadedFile')
+            ->where('is_displayed', true)
             ->whereNotNull('uploaded_file_id')
             ->whereHas('uploadedFile', function($query) {
                 $query->where('status', 'completed');
@@ -636,8 +656,8 @@ class DashboardController extends Controller
     public function updateWithRawData(Request $request)
     {
         // Get the most recently connected file from dashboard widgets
-        $activeWidget = DashboardWidget::with('uploadedFile')
-            ->where('is_active', true)
+        $activeWidget = FileWidgetConnection::with('uploadedFile')
+            ->where('is_displayed', true)
             ->whereNotNull('uploaded_file_id')
             ->whereHas('uploadedFile', function($query) {
                 $query->where('status', 'completed');
@@ -660,8 +680,8 @@ class DashboardController extends Controller
             $stats = $this->generateStatsFromData($data);
 
             // Update widget configurations to use raw data
-            $widgets = DashboardWidget::where('uploaded_file_id', $file->id)
-                ->where('is_active', true)
+            $widgets = FileWidgetConnection::where('uploaded_file_id', $file->id)
+                ->where('is_displayed', true)
                 ->get();
 
             foreach ($widgets as $widget) {
@@ -683,10 +703,10 @@ class DashboardController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Raw data update error: ' . $e->getMessage());
+            Log::error('Error updating dashboard with raw data: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update with raw data: ' . $e->getMessage()
+                'message' => 'Error updating dashboard: ' . $e->getMessage()
             ], 500);
         }
     }

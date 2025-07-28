@@ -46,6 +46,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                 { id: 'upload', label: 'File Management', icon: Upload, href: '/upload-files' },
                 { id: 'connected', label: 'Source Files', icon: FileText, href: '/connected-files' },
                 { id: 'combine', label: 'Combine Files', icon: LinkIcon, href: '/combine-files' },
+                { id: 'widget-selection', label: 'Widget Selection', icon: Settings, href: '/widget-selection' },
                 // { id: 'sources', label: 'Data Sources', icon: Database, href: '/data-sources' },
                 // { id: 'schedule', label: 'Sync Schedule', icon: Clock, href: '/sync-schedule' }
             ]

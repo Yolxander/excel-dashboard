@@ -39,4 +39,9 @@ class UploadedFile extends Model
     {
         return $this->hasMany(DashboardWidget::class);
     }
+
+    public function fileWidgetConnections()
+    {
+        return $this->hasMany(FileWidgetConnection::class);
+    }
 }

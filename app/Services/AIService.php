@@ -5,7 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\UploadedFile;
-use App\Models\DashboardWidget;
+use App\Models\FileWidgetConnection;
 
 class AIService
 {
@@ -172,7 +172,7 @@ class AIService
             return is_array($header) ? json_encode($header) : (string) $header;
         }, $dataSummary['headers']);
 
-        return "Analyze this Excel data and provide comprehensive insights for a business dashboard including widgets and charts.
+        return "Analyze this Excel data and provide comprehensive insights for a business dashboard. First, analyze the data to determine what types of widgets would be most appropriate, then generate insights for those widgets.
 
 File: {$filename}
 Total Rows: {$dataSummary['total_rows']}
@@ -187,35 +187,29 @@ Sample Data (first 5 rows):
 
 Please provide a JSON response with the following structure:
 {
+  \"widget_recommendations\": [
+    {
+      \"widget_name\": \"descriptive name based on actual data\",
+      \"widget_type\": \"kpi\" or \"bar_chart\" or \"pie_chart\" or \"table\",
+      \"description\": \"what this widget shows\",
+      \"source_columns\": [\"column1\", \"column2\"],
+      \"calculation_method\": \"how the value is calculated\",
+      \"priority\": 1-5 (1 being highest priority)
+    }
+  ],
   \"widget_insights\": {
-    \"total_sales\": {
+    \"widget_key_1\": {
       \"value\": number,
       \"trend\": \"+X%\" or \"-X%\",
       \"description\": \"string\",
-      \"source_column\": \"column_name\"
-    },
-    \"active_recruiters\": {
-      \"value\": number,
-      \"trend\": \"+X%\" or \"-X%\",
-      \"description\": \"string\",
-      \"source_column\": \"column_name\"
-    },
-    \"target_achievement\": {
-      \"value\": number,
-      \"trend\": \"+X%\" or \"-X%\",
-      \"description\": \"string\",
-      \"calculation_method\": \"string\"
-    },
-    \"avg_commission\": {
-      \"value\": number,
-      \"trend\": \"+X%\" or \"-X%\",
-      \"description\": \"string\",
-      \"calculation_method\": \"string\"
+      \"source_column\": \"column_name\",
+      \"widget_name\": \"display name\",
+      \"widget_type\": \"kpi\" or \"bar_chart\" or \"pie_chart\" or \"table\"
     }
   },
   \"chart_recommendations\": {
     \"bar_chart\": {
-      \"title\": \"Performance Overview\",
+      \"title\": \"descriptive title based on data\",
       \"x_axis\": \"column_name\",
       \"y_axis\": \"column_name\",
       \"description\": \"string\",
@@ -226,7 +220,7 @@ Please provide a JSON response with the following structure:
       ]
     },
     \"pie_chart\": {
-      \"title\": \"Data Distribution\",
+      \"title\": \"descriptive title based on data\",
       \"category_column\": \"column_name\",
       \"value_column\": \"column_name\",
       \"description\": \"string\",
@@ -248,7 +242,13 @@ Please provide a JSON response with the following structure:
   ]
 }
 
-Focus on identifying sales, revenue, commission, recruiter, and performance-related data. For charts, provide realistic sample data based on the column analysis. If the data doesn't contain these specific metrics, adapt the analysis to the available data types.";
+IMPORTANT:
+1. Analyze the actual data content to determine what widgets make sense
+2. Generate widget names that accurately reflect the data (e.g., if data is about products, use 'Total Products' not 'Total Sales')
+3. Choose widget types based on the data characteristics (numeric data for KPIs, categorical data for charts)
+4. Only include widgets that are relevant to the actual data
+5. Use descriptive names that match the data content
+6. Prioritize widgets based on data importance and business value";
     }
 
     private function formatColumnAnalysis($columnAnalysis)
@@ -303,60 +303,170 @@ Focus on identifying sales, revenue, commission, recruiter, and performance-rela
             return !$analysis['is_primarily_numeric'] && $analysis['unique_values'] > 1;
         });
 
-        $firstNumericColumn = array_key_first($numericColumns);
-        $firstCategoricalColumn = array_key_first($categoricalColumns);
+        $allColumns = array_keys($dataSummary['column_analysis']);
+        $numericColumnNames = array_keys($numericColumns);
+        $categoricalColumnNames = array_keys($categoricalColumns);
+
+        // Generate widget recommendations based on actual data
+        $widgetRecommendations = [];
+        $widgetInsights = [];
+
+        // Generate 6 KPI widgets
+        $kpiCount = 0;
+
+        // 1. Total widgets for numeric columns
+        foreach (array_slice($numericColumnNames, 0, 3) as $columnName) {
+            $displayName = $this->getColumnDisplayName($columnName);
+            $widgetKey = 'total_' . strtolower(str_replace(' ', '_', $displayName));
+
+            $widgetRecommendations[] = [
+                'widget_name' => 'Total ' . $displayName,
+                'widget_type' => 'kpi',
+                'description' => 'Total value from ' . $displayName . ' column',
+                'source_columns' => [$columnName],
+                'calculation_method' => 'Sum of all values',
+                'priority' => $kpiCount + 1
+            ];
+
+            $widgetInsights[$widgetKey] = [
+                'value' => $this->calculateTotalFromColumn($dataSummary, $columnName),
+                'trend' => '+12%',
+                'description' => 'Total ' . $displayName,
+                'source_column' => $columnName,
+                'widget_name' => 'Total ' . $displayName,
+                'widget_type' => 'kpi'
+            ];
+            $kpiCount++;
+        }
+
+        // 2. Unique widgets for categorical columns
+        foreach (array_slice($categoricalColumnNames, 0, 2) as $columnName) {
+            $displayName = $this->getColumnDisplayName($columnName);
+            $widgetKey = 'unique_' . strtolower(str_replace(' ', '_', $displayName));
+
+            $widgetRecommendations[] = [
+                'widget_name' => 'Unique ' . $displayName,
+                'widget_type' => 'kpi',
+                'description' => 'Number of unique ' . $displayName,
+                'source_columns' => [$columnName],
+                'calculation_method' => 'Count of unique values',
+                'priority' => $kpiCount + 1
+            ];
+
+            $widgetInsights[$widgetKey] = [
+                'value' => $dataSummary['column_analysis'][$columnName]['unique_values'],
+                'trend' => '+5%',
+                'description' => 'Unique ' . $displayName,
+                'source_column' => $columnName,
+                'widget_name' => 'Unique ' . $displayName,
+                'widget_type' => 'kpi'
+            ];
+            $kpiCount++;
+        }
+
+        // 3. Average widgets for numeric columns
+        foreach (array_slice($numericColumnNames, 0, 1) as $columnName) {
+            $displayName = $this->getColumnDisplayName($columnName);
+            $widgetKey = 'avg_' . strtolower(str_replace(' ', '_', $displayName));
+
+            $widgetRecommendations[] = [
+                'widget_name' => 'Average ' . $displayName,
+                'widget_type' => 'kpi',
+                'description' => 'Average value from ' . $displayName . ' column',
+                'source_columns' => [$columnName],
+                'calculation_method' => 'Average of all values',
+                'priority' => $kpiCount + 1
+            ];
+
+            $widgetInsights[$widgetKey] = [
+                'value' => $this->calculateAverageFromColumn($dataSummary, $columnName),
+                'trend' => '+3%',
+                'description' => 'Average ' . $displayName,
+                'source_column' => $columnName,
+                'widget_name' => 'Average ' . $displayName,
+                'widget_type' => 'kpi'
+            ];
+            $kpiCount++;
+        }
+
+        // Generate 4 chart widgets
+        $chartCount = 0;
+
+        // 1. Bar charts for numeric vs categorical combinations
+        for ($i = 0; $i < min(2, count($numericColumnNames), count($categoricalColumnNames)); $i++) {
+            $numericColumn = $numericColumnNames[$i];
+            $categoricalColumn = $categoricalColumnNames[$i];
+
+            $numericDisplayName = $this->getColumnDisplayName($numericColumn);
+            $categoricalDisplayName = $this->getColumnDisplayName($categoricalColumn);
+
+            $widgetRecommendations[] = [
+                'widget_name' => $categoricalDisplayName . ' by ' . $numericDisplayName,
+                'widget_type' => 'bar_chart',
+                'description' => 'Bar chart showing ' . $numericDisplayName . ' by ' . $categoricalDisplayName,
+                'source_columns' => [$categoricalColumn, $numericColumn],
+                'calculation_method' => 'Group by ' . $categoricalDisplayName . ' and sum ' . $numericDisplayName,
+                'priority' => $chartCount + 1
+            ];
+            $chartCount++;
+        }
+
+        // 2. Pie charts for numeric distributions
+        foreach (array_slice($numericColumnNames, 0, 2) as $columnName) {
+            $displayName = $this->getColumnDisplayName($columnName);
+
+            $widgetRecommendations[] = [
+                'widget_name' => $displayName . ' Distribution',
+                'widget_type' => 'pie_chart',
+                'description' => 'Pie chart showing distribution of ' . $displayName,
+                'source_columns' => [$columnName],
+                'calculation_method' => 'Distribution analysis',
+                'priority' => $chartCount + 1
+            ];
+            $chartCount++;
+        }
+
+        // Add table widget
+        $widgetRecommendations[] = [
+            'widget_name' => 'Data Table',
+            'widget_type' => 'table',
+            'description' => 'Complete data table view',
+            'source_columns' => array_keys($dataSummary['column_analysis']),
+            'calculation_method' => 'Display all data',
+            'priority' => 5
+        ];
 
         return [
-            'widget_insights' => [
-                'total_sales' => [
-                    'value' => $this->calculateTotalFromColumn($dataSummary, $firstNumericColumn),
-                    'trend' => '+12%',
-                    'description' => 'Total value from ' . ($firstNumericColumn ?? 'data'),
-                    'source_column' => $firstNumericColumn
-                ],
-                'active_recruiters' => [
-                    'value' => $firstCategoricalColumn ? $dataSummary['column_analysis'][$firstCategoricalColumn]['unique_values'] : 0,
-                    'trend' => '+5%',
-                    'description' => 'Unique ' . ($firstCategoricalColumn ?? 'categories'),
-                    'source_column' => $firstCategoricalColumn
-                ],
-                'target_achievement' => [
-                    'value' => 75,
-                    'trend' => '+8%',
-                    'description' => 'Estimated achievement rate',
-                    'calculation_method' => 'Based on data completeness'
-                ],
-                'avg_commission' => [
-                    'value' => $this->calculateAverageFromColumn($dataSummary, $firstNumericColumn),
-                    'trend' => '+3%',
-                    'description' => 'Average value per ' . ($firstCategoricalColumn ?? 'category'),
-                    'calculation_method' => 'Total / Unique categories'
-                ]
-            ],
+            'widget_recommendations' => $widgetRecommendations,
+            'widget_insights' => $widgetInsights,
             'chart_recommendations' => [
                 'bar_chart' => [
-                    'title' => $this->generateBarChartTitle($dataSummary, $firstCategoricalColumn, $firstNumericColumn),
-                    'x_axis' => $firstCategoricalColumn ?? 'Category',
-                    'y_axis' => $firstNumericColumn ?? 'Value',
-                    'description' => $this->generateBarChartDescription($dataSummary, $firstCategoricalColumn, $firstNumericColumn),
-                    'chart_data' => $this->generateBarChartData($dataSummary, $firstCategoricalColumn, $firstNumericColumn)
+                    'title' => count($numericColumnNames) > 0 && count($categoricalColumnNames) > 0
+                        ? $this->getColumnDisplayName($categoricalColumnNames[0]) . ' by ' . $this->getColumnDisplayName($numericColumnNames[0])
+                        : 'Data Analysis',
+                    'x_axis' => $categoricalColumnNames[0] ?? 'Category',
+                    'y_axis' => $numericColumnNames[0] ?? 'Value',
+                    'description' => 'Data analysis chart',
+                    'chart_data' => $this->generateBarChartData($dataSummary, $categoricalColumnNames[0] ?? null, $numericColumnNames[0] ?? null)
                 ],
                 'pie_chart' => [
-                    'title' => $this->generatePieChartTitle($dataSummary, $firstCategoricalColumn, $firstNumericColumn),
-                    'category_column' => $firstCategoricalColumn ?? 'Category',
-                    'value_column' => $firstNumericColumn ?? 'Value',
-                    'description' => $this->generatePieChartDescription($dataSummary, $firstCategoricalColumn, $firstNumericColumn),
-                    'chart_data' => $this->generatePieChartData($dataSummary, $firstCategoricalColumn, $firstNumericColumn)
+                    'title' => count($numericColumnNames) > 0
+                        ? $this->getColumnDisplayName($numericColumnNames[0]) . ' Distribution'
+                        : 'Data Distribution',
+                    'category_column' => $categoricalColumnNames[0] ?? 'Category',
+                    'value_column' => $numericColumnNames[0] ?? 'Value',
+                    'description' => 'Data distribution chart',
+                    'chart_data' => $this->generatePieChartData($dataSummary, $categoricalColumnNames[0] ?? null, $numericColumnNames[0] ?? null)
                 ]
             ],
             'data_insights' => [
-                'Data contains ' . $dataSummary['total_rows'] . ' records across ' . $dataSummary['total_columns'] . ' columns',
-                'Found ' . count($numericColumns) . ' numeric columns and ' . count($categoricalColumns) . ' categorical columns',
-                'Data appears to be ' . ($dataSummary['total_rows'] > 100 ? 'comprehensive' : 'sample') . ' dataset'
+                'Data contains ' . count($dataSummary['column_analysis']) . ' columns',
+                'Total of ' . $dataSummary['total_rows'] . ' data rows',
+                'Generated insights based on available data structure'
             ],
             'recommendations' => [
-                'Consider uploading more data for better insights',
-                'Review column headers for data quality'
+                'Consider adding more data for richer insights',
+                'Review data quality and completeness'
             ]
         ];
     }
@@ -558,6 +668,7 @@ Focus on identifying sales, revenue, commission, recruiter, and performance-rela
         }
 
         $widgetInsights = $insights['widget_insights'];
+        $widgetRecommendations = $insights['widget_recommendations'] ?? [];
         $chartRecommendations = $insights['chart_recommendations'] ?? [];
 
         // Save AI insights to the file
@@ -565,53 +676,209 @@ Focus on identifying sales, revenue, commission, recruiter, and performance-rela
             'ai_insights' => $insights
         ]);
 
-        // Update each widget with AI insights
-        $widgets = DashboardWidget::where('uploaded_file_id', $file->id)
-            ->where('is_active', true)
+        // Delete existing widgets for this file
+        FileWidgetConnection::where('uploaded_file_id', $file->id)->delete();
+
+        // Create widgets based on AI recommendations
+        if (!empty($widgetRecommendations)) {
+            $this->createWidgetsFromAIRecommendations($file, $widgetRecommendations, $widgetInsights);
+        } else {
+            // Fallback: create default widgets if no recommendations
+            $this->createDefaultWidgets($file, $widgetInsights);
+        }
+
+        // Update chart widgets with AI recommendations
+        if (!empty($chartRecommendations)) {
+            $this->updateChartWidgetsWithAIRecommendations($file, $chartRecommendations);
+        }
+    }
+
+    private function createWidgetsFromAIRecommendations($file, $recommendations, $insights)
+    {
+        // Sort recommendations by priority
+        usort($recommendations, function($a, $b) {
+            return ($a['priority'] ?? 5) - ($b['priority'] ?? 5);
+        });
+
+        // Separate KPI and chart widgets
+        $kpiWidgets = array_filter($recommendations, function($rec) {
+            return $rec['widget_type'] === 'kpi';
+        });
+
+        $chartWidgets = array_filter($recommendations, function($rec) {
+            return in_array($rec['widget_type'], ['bar_chart', 'pie_chart']);
+        });
+
+        // Limit to 6 KPI widgets and 4 chart widgets
+        $kpiWidgets = array_slice($kpiWidgets, 0, 6);
+        $chartWidgets = array_slice($chartWidgets, 0, 4);
+
+        // Combine widgets with KPI widgets first
+        $finalWidgets = array_merge($kpiWidgets, $chartWidgets);
+
+        $displayOrder = 1;
+        $kpiCount = 0;
+        $chartCount = 0;
+
+        foreach ($finalWidgets as $recommendation) {
+            $widgetName = $recommendation['widget_name'];
+            $widgetType = $recommendation['widget_type'];
+            $widgetKey = strtolower(str_replace(' ', '_', $widgetName));
+
+            // Find corresponding insight
+            $insight = null;
+            foreach ($insights as $key => $insightData) {
+                if (isset($insightData['widget_name']) && $insightData['widget_name'] === $widgetName) {
+                    $insight = $insightData;
+                    break;
+                }
+            }
+
+            // Determine if widget should be displayed by default
+            $isDisplayed = false;
+            if ($widgetType === 'kpi' && $kpiCount < 4) {
+                $isDisplayed = true;
+                $kpiCount++;
+            } elseif (in_array($widgetType, ['bar_chart', 'pie_chart']) && $chartCount < 2) {
+                $isDisplayed = true;
+                $chartCount++;
+            }
+
+            // Create widget configuration
+            $widgetConfig = [
+                'description' => $recommendation['description'] ?? '',
+                'source_columns' => $recommendation['source_columns'] ?? [],
+                'calculation_method' => $recommendation['calculation_method'] ?? '',
+                'ai_insights' => $insight,
+                'last_ai_analysis' => now()->toISOString()
+            ];
+
+            // Create the widget
+            FileWidgetConnection::create([
+                'uploaded_file_id' => $file->id,
+                'widget_type' => $widgetType,
+                'widget_name' => $widgetName,
+                'widget_config' => $widgetConfig,
+                'is_displayed' => $isDisplayed,
+                'display_order' => $displayOrder,
+                'ai_insights' => $insight,
+            ]);
+
+            Log::info("Created AI-recommended widget '{$widgetName}' of type '{$widgetType}' (displayed: {$isDisplayed})");
+            $displayOrder++;
+        }
+    }
+
+    private function createDefaultWidgets($file, $insights)
+    {
+        // Create default widgets if no AI recommendations
+        $defaultWidgets = [
+            [
+                'widget_type' => 'kpi',
+                'widget_name' => 'Data Overview',
+                'display_order' => 1,
+                'is_displayed' => true,
+            ],
+            [
+                'widget_type' => 'kpi',
+                'widget_name' => 'Data Analysis',
+                'display_order' => 2,
+                'is_displayed' => true,
+            ],
+            [
+                'widget_type' => 'kpi',
+                'widget_name' => 'Data Summary',
+                'display_order' => 3,
+                'is_displayed' => true,
+            ],
+            [
+                'widget_type' => 'kpi',
+                'widget_name' => 'Data Metrics',
+                'display_order' => 4,
+                'is_displayed' => true,
+            ],
+            [
+                'widget_type' => 'kpi',
+                'widget_name' => 'Data Insights',
+                'display_order' => 5,
+                'is_displayed' => false,
+            ],
+            [
+                'widget_type' => 'kpi',
+                'widget_name' => 'Data Performance',
+                'display_order' => 6,
+                'is_displayed' => false,
+            ],
+            [
+                'widget_type' => 'bar_chart',
+                'widget_name' => 'Data Chart',
+                'display_order' => 7,
+                'is_displayed' => true,
+            ],
+            [
+                'widget_type' => 'pie_chart',
+                'widget_name' => 'Data Distribution',
+                'display_order' => 8,
+                'is_displayed' => true,
+            ],
+            [
+                'widget_type' => 'bar_chart',
+                'widget_name' => 'Performance Chart',
+                'display_order' => 9,
+                'is_displayed' => false,
+            ],
+            [
+                'widget_type' => 'pie_chart',
+                'widget_name' => 'Distribution Chart',
+                'display_order' => 10,
+                'is_displayed' => false,
+            ],
+        ];
+
+        foreach ($defaultWidgets as $widget) {
+            FileWidgetConnection::create([
+                'uploaded_file_id' => $file->id,
+                'widget_type' => $widget['widget_type'],
+                'widget_name' => $widget['widget_name'],
+                'widget_config' => [
+                    'ai_insights' => null,
+                    'last_ai_analysis' => now()->toISOString()
+                ],
+                'is_displayed' => $widget['is_displayed'],
+                'display_order' => $widget['display_order'],
+                'ai_insights' => null,
+            ]);
+        }
+    }
+
+    private function updateChartWidgetsWithAIRecommendations($file, $chartRecommendations)
+    {
+        $widgets = FileWidgetConnection::where('uploaded_file_id', $file->id)
+            ->whereIn('widget_type', ['bar_chart', 'pie_chart'])
             ->get();
 
         foreach ($widgets as $widget) {
-            $widgetName = strtolower(str_replace(' ', '_', $widget->widget_name));
+            $chartType = $widget->widget_type === 'bar_chart' ? 'bar_chart' : 'pie_chart';
 
-            if (isset($widgetInsights[$widgetName])) {
-                $insight = $widgetInsights[$widgetName];
+            if (isset($chartRecommendations[$chartType])) {
+                $chartConfig = $chartRecommendations[$chartType];
 
-                // Update widget configuration with AI insights
                 $currentConfig = $widget->widget_config ?? [];
-                $currentConfig['ai_insights'] = $insight;
+                $currentConfig['ai_chart_config'] = $chartConfig;
                 $currentConfig['last_ai_analysis'] = now()->toISOString();
 
                 $widget->update([
                     'widget_config' => $currentConfig
                 ]);
 
-                Log::info("Updated widget '{$widget->widget_name}' with AI insights");
-            }
-
-            // Update chart widgets with AI recommendations
-            if (in_array($widget->widget_type, ['bar_chart', 'pie_chart']) && isset($chartRecommendations)) {
-                $chartType = $widget->widget_type === 'bar_chart' ? 'bar_chart' : 'pie_chart';
-
-                if (isset($chartRecommendations[$chartType])) {
-                    $chartConfig = $chartRecommendations[$chartType];
-
-                    $currentConfig = $widget->widget_config ?? [];
-                    $currentConfig['ai_chart_config'] = $chartConfig;
-                    $currentConfig['last_ai_analysis'] = now()->toISOString();
-
-                    $widget->update([
-                        'widget_config' => $currentConfig
-                    ]);
-
-                    Log::info("Updated chart widget '{$widget->widget_name}' with AI recommendations");
-                }
+                Log::info("Updated chart widget '{$widget->widget_name}' with AI recommendations");
             }
         }
     }
 
     public function getWidgetInsights($widgetId)
     {
-        $widget = DashboardWidget::find($widgetId);
+        $widget = FileWidgetConnection::find($widgetId);
 
         if (!$widget || !isset($widget->widget_config['ai_insights'])) {
             return null;
