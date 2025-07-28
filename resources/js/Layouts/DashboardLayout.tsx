@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, useForm } from '@inertiajs/react';
 import {
     BarChart3,
     Upload,
@@ -11,7 +11,8 @@ import {
     Settings,
     BrainCircuit,
     Database as DatabaseIcon,
-    Sparkles
+    Sparkles,
+    LogOut
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -26,6 +27,11 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, title = 'Dashboard', description = 'Manage your data and insights', showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw' }: DashboardLayoutProps) {
     const { url } = usePage();
+    const { post } = useForm();
+
+    const handleLogout = () => {
+        post('/logout');
+    };
 
     const sidebarItems = [
         {
@@ -98,9 +104,9 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                                 <p className="text-sm text-gray-600">{description}</p>
                             </div>
 
-                                                        {/* Right side - Data Source Switch */}
-                            {showUpdateButton && onUpdateWidgets && (
-                                <div className="flex items-center space-x-3">
+                                                        {/* Right side - Data Source Switch and Logout */}
+                            <div className="flex items-center space-x-3">
+                                {showUpdateButton && onUpdateWidgets && (
                                     <div className="flex items-center bg-gray-100 rounded-lg p-1">
                                         <button
                                             onClick={() => onUpdateWidgets('raw')}
@@ -136,8 +142,17 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                                             AI Insights
                                         </button>
                                     </div>
-                                </div>
-                            )}
+                                )}
+
+                                {/* Logout Button */}
+                                <button
+                                    onClick={handleLogout}
+                                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                >
+                                    <LogOut className="h-4 w-4 mr-2" />
+                                    Logout
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </header>
