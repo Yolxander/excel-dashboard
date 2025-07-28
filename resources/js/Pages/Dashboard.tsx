@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     BarChart3,
     Users,
@@ -29,6 +28,8 @@ import {
     AlertCircle,
     XCircle
 } from 'lucide-react';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 
 interface DashboardProps {
@@ -38,17 +39,17 @@ interface DashboardProps {
         targetAchievement: number;
         avgCommission: number;
     };
-    recentOrders: Array<{
-        id: number;
-        customer: string;
-        amount: number;
-        status: string;
-        date: string;
-    }>;
     connectedFile?: string;
+    chartData?: {
+        barChart: Array<{ name: string; value: number }>;
+        pieChart: Array<{ name: string; value: number }>;
+    };
+    tableData?: Array<any>;
 }
 
-export default function Dashboard({ stats, recentOrders, connectedFile }: DashboardProps) {
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+
+export default function Dashboard({ stats, connectedFile, chartData, tableData }: DashboardProps) {
     const [showDataNotification, setShowDataNotification] = React.useState(false);
 
     React.useEffect(() => {
@@ -57,6 +58,8 @@ export default function Dashboard({ stats, recentOrders, connectedFile }: Dashbo
             setTimeout(() => setShowDataNotification(false), 5000);
         }
     }, [connectedFile]);
+
+
 
     const kpiCards = [
         {
@@ -93,11 +96,24 @@ export default function Dashboard({ stats, recentOrders, connectedFile }: Dashbo
         },
     ];
 
+    // Chart configurations for shadcn
+    const barChartConfig = {
+        value: {
+            label: "Value",
+            color: "hsl(var(--chart-1))",
+        },
+    };
 
+    const pieChartConfig = {
+        value: {
+            label: "Value",
+            color: "hsl(var(--chart-1))",
+        },
+    };
 
     const renderOverview = () => (
         <div className="space-y-6">
-                        {/* Welcome Message */}
+            {/* Welcome Message */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
                 <h2 className="text-2xl font-bold mb-2">Welcome back! 👋</h2>
                 <p className="text-blue-100">
@@ -145,33 +161,91 @@ export default function Dashboard({ stats, recentOrders, connectedFile }: Dashbo
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Sales Performance</CardTitle>
-                        <CardDescription>Monthly sales by region</CardDescription>
+                        <CardTitle>Performance Overview</CardTitle>
+                        <CardDescription>Data from your Excel file</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-                            <div className="text-center">
-                                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-500">Sales Performance Chart</p>
-                                <p className="text-sm text-gray-400">Bar chart showing regional sales data</p>
+                        {chartData && chartData.barChart && chartData.barChart.length > 0 ? (
+                            <ChartContainer config={barChartConfig}>
+                                <BarChart data={chartData.barChart}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <ChartTooltip
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                return (
+                                                    <ChartTooltipContent
+                                                        payload={payload}
+                                                        label={payload[0].payload.name}
+                                                    />
+                                                )
+                                            }
+                                            return null
+                                        }}
+                                    />
+                                    <Bar dataKey="value" fill="hsl(var(--chart-1))" />
+                                </BarChart>
+                            </ChartContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+                                <div className="text-center">
+                                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500">No chart data available</p>
+                                    <p className="text-sm text-gray-400">Upload an Excel file to see charts</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Regional Distribution</CardTitle>
-                        <CardDescription>Sales by region percentage</CardDescription>
+                        <CardTitle>Distribution</CardTitle>
+                        <CardDescription>Data breakdown from your file</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-                            <div className="text-center">
-                                <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-500">Regional Distribution Chart</p>
-                                <p className="text-sm text-gray-400">Pie chart showing regional breakdown</p>
+                        {chartData && chartData.pieChart && chartData.pieChart.length > 0 ? (
+                            <ChartContainer config={pieChartConfig}>
+                                <RechartsPieChart>
+                                    <Pie
+                                        data={chartData.pieChart}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                        outerRadius={80}
+                                        fill="hsl(var(--chart-1))"
+                                        dataKey="value"
+                                    >
+                                        {chartData.pieChart.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <ChartTooltip
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                return (
+                                                    <ChartTooltipContent
+                                                        payload={payload}
+                                                        label={payload[0].payload.name}
+                                                    />
+                                                )
+                                            }
+                                            return null
+                                        }}
+                                    />
+                                </RechartsPieChart>
+                            </ChartContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+                                <div className="text-center">
+                                    <PieChart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500">No chart data available</p>
+                                    <p className="text-sm text-gray-400">Upload an Excel file to see charts</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -187,11 +261,10 @@ export default function Dashboard({ stats, recentOrders, connectedFile }: Dashbo
                         <div className="flex items-center space-x-2">
                             <Filter className="h-4 w-4 text-gray-500" />
                             <select className="border rounded-md px-3 py-1 text-sm">
-                                <option>All Regions</option>
-                                <option>North</option>
-                                <option>South</option>
-                                <option>East</option>
-                                <option>West</option>
+                                <option>All Categories</option>
+                                {chartData?.barChart.map((item, index) => (
+                                    <option key={index}>{item.name}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -216,57 +289,45 @@ export default function Dashboard({ stats, recentOrders, connectedFile }: Dashbo
                 </CardContent>
             </Card>
 
-            {/* Recent Orders Table */}
+            {/* Dynamic Data Table */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Recent Orders</CardTitle>
-                    <CardDescription>Latest orders from your customers</CardDescription>
+                    <CardTitle>Excel Data Table</CardTitle>
+                    <CardDescription>Raw data from your uploaded file</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Customer</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Date</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {recentOrders.map((order) => (
-                                <TableRow key={order.id}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex items-center space-x-2">
-                                            <Avatar className="h-6 w-6">
-                                                <AvatarFallback>
-                                                    {order.customer.charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            {order.customer}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>${order.amount}</TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant={
-                                                order.status === 'Completed' ? 'default' :
-                                                order.status === 'Pending' ? 'secondary' : 'destructive'
-                                            }
-                                        >
-                                            {order.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{order.date}</TableCell>
+                    {tableData && tableData.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    {Object.keys(tableData[0]).map((header) => (
+                                        <TableHead key={header}>{header}</TableHead>
+                                    ))}
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {tableData.map((row, index) => (
+                                    <TableRow key={index}>
+                                        {Object.values(row).map((value, cellIndex) => (
+                                            <TableCell key={cellIndex}>
+                                                {typeof value === 'number' ? value.toLocaleString() : value}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500">
+                            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                            <p>No data available</p>
+                            <p className="text-sm text-gray-400">Upload an Excel file to see your data</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
     );
-
-
 
     return (
         <>
@@ -298,8 +359,6 @@ export default function Dashboard({ stats, recentOrders, connectedFile }: Dashbo
                         </div>
                     </div>
                 )}
-
-
 
                 {renderOverview()}
             </DashboardLayout>
