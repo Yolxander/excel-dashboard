@@ -29,6 +29,9 @@ class ConnectedFilesController extends Controller
             return response()->json(['error' => 'File is not processed yet'], 400);
         }
 
+        // Deactivate all existing widgets first
+        DashboardWidget::where('is_active', true)->update(['is_active' => false]);
+
         // Create or update dashboard widgets for this file
         $this->createWidgetsForFile($file);
 

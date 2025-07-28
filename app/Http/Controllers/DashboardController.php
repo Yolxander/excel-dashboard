@@ -12,11 +12,14 @@ class DashboardController extends Controller
 {
         public function index()
     {
-        // Get the active connected file from dashboard widgets
+        // Get the most recently connected file from dashboard widgets
         $activeWidget = DashboardWidget::with('uploadedFile')
             ->where('is_active', true)
             ->whereNotNull('uploaded_file_id')
-            ->orderBy('display_order')
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('status', 'completed');
+            })
+            ->orderBy('updated_at', 'desc')
             ->first();
 
         $connectedFile = null;
@@ -82,7 +85,7 @@ class DashboardController extends Controller
         }
 
         // Try to identify relevant columns
-        $salesColumn = $this->findColumn($headers, ['sales', 'amount', 'revenue', 'total', 'price', 'commission']);
+        $salesColumn = $this->findColumn($headers, ['sales', 'amount', 'revenue', 'total', 'price', 'commission', 'commission earned', 'revenue']);
         $recruiterColumn = $this->findColumn($headers, ['recruiter', 'employee', 'staff', 'name', 'salesperson']);
         $statusColumn = $this->findColumn($headers, ['status', 'state', 'condition']);
         $dateColumn = $this->findColumn($headers, ['date', 'created', 'timestamp']);
@@ -121,14 +124,14 @@ class DashboardController extends Controller
         }
 
         $activeRecruiters = count($recruiterCounts);
-        $targetAchievement = $totalSalesCount > 0 ? round(($completedSales / $totalSalesCount) * 100) : 87;
-        $avgCommission = $activeRecruiters > 0 ? round($totalSales / $activeRecruiters) : 1250;
+        $targetAchievement = $totalSalesCount > 0 ? round(($completedSales / $totalSalesCount) * 100) : 0;
+        $avgCommission = $activeRecruiters > 0 ? round($totalSales / $activeRecruiters) : 0;
 
         Log::info("Calculated stats - Total Sales: $totalSales, Active Recruiters: $activeRecruiters, Target Achievement: $targetAchievement");
 
         return [
-            'totalSales' => $totalSales > 0 ? $totalSales : 456789,
-            'activeRecruiters' => $activeRecruiters > 0 ? $activeRecruiters : 24,
+            'totalSales' => $totalSales,
+            'activeRecruiters' => $activeRecruiters,
             'targetAchievement' => $targetAchievement,
             'avgCommission' => $avgCommission,
         ];
