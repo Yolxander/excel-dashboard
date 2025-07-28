@@ -324,7 +324,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                             </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                            {dashboardWidgets.length > 0 ? (
+                            {dashboardWidgets.filter(widget => !widget.widget_name.includes('Combined Data')).length > 0 ? (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -336,7 +336,9 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {dashboardWidgets.map((widget) => (
+                                        {dashboardWidgets
+                                            .filter(widget => !widget.widget_name.includes('Combined Data'))
+                                            .map((widget) => (
                                             <TableRow key={widget.id}>
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center space-x-2">
@@ -389,35 +391,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                 </CardContent>
                             </Card>
 
-                    {/* Quick Actions */}
-                            <Card>
-                                <CardHeader>
-                            <CardTitle>Quick Actions</CardTitle>
-                            <CardDescription>Common tasks and shortcuts</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                            <div className="flex flex-wrap gap-3">
-                                <Link href="/upload-files">
-                                    <Button variant="outline">
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        Upload New File
-                                            </Button>
-                                </Link>
-                                <Link href="/">
-                                    <Button variant="outline">
-                                                <BarChart3 className="h-4 w-4 mr-2" />
-                                        View Dashboard
-                                            </Button>
-                                </Link>
-                                <Link href="/data-sources">
-                                    <Button variant="outline">
-                                        <Database className="h-4 w-4 mr-2" />
-                                        Data Sources
-                                            </Button>
-                                </Link>
-                                </div>
-                            </CardContent>
-                        </Card>
+
                     </div>
                 </DashboardLayout>
             </>
