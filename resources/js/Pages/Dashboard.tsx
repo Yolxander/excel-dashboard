@@ -64,10 +64,19 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
     }, [connectedFile]);
 
     const handleFilterChange = (column: string, value: string) => {
-        setActiveFilters(prev => ({
-            ...prev,
-            [column]: value
-        }));
+        setActiveFilters(prev => {
+            const newFilters = { ...prev };
+
+            if (value === `All ${column}`) {
+                // Remove the filter if it's set to "All"
+                delete newFilters[column];
+            } else {
+                // Set the filter value
+                newFilters[column] = value;
+            }
+
+            return newFilters;
+        });
     };
 
     const visibleColumns = availableColumns && availableColumns.length > 3 && !showAllFilters
@@ -277,9 +286,9 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
                             visibleColumns.map((column, index) => (
                                 <div key={index} className="flex items-center space-x-2">
                                     <Filter className="h-4 w-4 text-gray-500" />
-                                    <select
-                                        className="border rounded-md px-3 py-1 text-sm"
-                                        value={activeFilters[column] || `All ${column}`}
+                                                                                                            <select
+                                        className={`border rounded-md px-3 py-1 text-sm ${activeFilters[column] ? 'border-blue-500 bg-blue-50' : ''}`}
+                                        value={activeFilters[column] ? activeFilters[column] : `All ${column}`}
                                         onChange={(e) => handleFilterChange(column, e.target.value)}
                                     >
                                         <option value={`All ${column}`}>All {column}</option>
@@ -343,7 +352,7 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
                     </div>
 
                     {/* Active Filters Summary */}
-                    {Object.keys(activeFilters).length > 0 && (
+                    {Object.keys(activeFilters).length > 0 ? (
                         <div className="mt-4 pt-4 border-t">
                             <div className="flex items-center space-x-2 mb-2">
                                 <Filter className="h-4 w-4 text-gray-500" />
@@ -355,12 +364,19 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
                                         {column}: {value}
                                         <button
                                             onClick={() => handleFilterChange(column, `All ${column}`)}
-                                            className="ml-1 text-gray-500 hover:text-gray-700"
+                                            className="ml-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full w-4 h-4 flex items-center justify-center text-xs"
                                         >
                                             ×
                                         </button>
                                     </Badge>
                                 ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mt-4 pt-4 border-t">
+                            <div className="flex items-center space-x-2">
+                                <Filter className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm text-gray-500">No active filters - showing all data</span>
                             </div>
                         </div>
                     )}
