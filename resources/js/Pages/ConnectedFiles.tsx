@@ -23,7 +23,8 @@ import {
     Plus,
     Trash2,
     Eye,
-    Download
+    Download,
+    BrainCircuit
 } from 'lucide-react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 
@@ -62,6 +63,7 @@ interface ConnectedFilesProps {
 export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: ConnectedFilesProps) {
     const [connectingFile, setConnectingFile] = React.useState<number | null>(null);
     const [disconnectingFile, setDisconnectingFile] = React.useState<number | null>(null);
+    const [analyzingFile, setAnalyzingFile] = React.useState<number | null>(null);
     const [toastMessage, setToastMessage] = React.useState<{ type: 'success' | 'error', message: string } | null>(null);
 
     const connectFile = async (fileId: number) => {
@@ -115,6 +117,38 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
             setToastMessage({ type: 'error', message: 'Failed to disconnect file' });
         } finally {
             setDisconnectingFile(null);
+        }
+    };
+
+    const analyzeFileWithAI = async (fileId: number) => {
+        setAnalyzingFile(fileId);
+        try {
+            const response = await fetch(`/ai/analyze-file/${fileId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setToastMessage({
+                    type: 'success',
+                    message: 'AI analysis completed successfully! Check the dashboard for enhanced insights.'
+                });
+                // Redirect to dashboard to see the AI insights
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                setToastMessage({ type: 'error', message: data.message || 'AI analysis failed' });
+            }
+        } catch (error) {
+            setToastMessage({ type: 'error', message: 'Network error during AI analysis' });
+        } finally {
+            setAnalyzingFile(null);
         }
     };
 
@@ -288,8 +322,18 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                             )}
                                                         </>
                                                     )}
-                                            <Button variant="outline" size="sm">
-                                                        <Eye className="h-4 w-4" />
+                                                                                                                                    <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => analyzeFileWithAI(file.id)}
+                                                disabled={analyzingFile === file.id}
+                                                title="Analyze with AI"
+                                            >
+                                                {analyzingFile === file.id ? (
+                                                    <Clock className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <BrainCircuit className="h-4 w-4" />
+                                                )}
                                             </Button>
                                     </div>
                                 </CardContent>

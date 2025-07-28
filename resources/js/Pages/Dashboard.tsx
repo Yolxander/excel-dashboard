@@ -44,6 +44,32 @@ interface DashboardProps {
         activeRecruiters: number;
         targetAchievement: number;
         avgCommission: number;
+        ai_insights?: {
+            total_sales?: {
+                value: number;
+                trend: string;
+                description: string;
+                source_column?: string;
+            };
+            active_recruiters?: {
+                value: number;
+                trend: string;
+                description: string;
+                source_column?: string;
+            };
+            target_achievement?: {
+                value: number;
+                trend: string;
+                description: string;
+                calculation_method?: string;
+            };
+            avg_commission?: {
+                value: number;
+                trend: string;
+                description: string;
+                calculation_method?: string;
+            };
+        };
     };
     connectedFile?: string;
     chartData?: {
@@ -93,33 +119,37 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
             title: 'Total Sales',
             value: `$${stats.totalSales.toLocaleString()}`,
             icon: DollarSign,
-            description: 'This month',
-            trend: '+12%',
+            description: stats.ai_insights?.total_sales?.description || 'This month',
+            trend: stats.ai_insights?.total_sales?.trend || '+12%',
             trendUp: true,
+            aiSource: stats.ai_insights?.total_sales?.source_column,
         },
         {
             title: 'Active Recruiters',
             value: stats.activeRecruiters.toString(),
             icon: Users,
-            description: 'Currently active',
-            trend: '+5%',
+            description: stats.ai_insights?.active_recruiters?.description || 'Currently active',
+            trend: stats.ai_insights?.active_recruiters?.trend || '+5%',
             trendUp: true,
+            aiSource: stats.ai_insights?.active_recruiters?.source_column,
         },
         {
             title: 'Target Achievement',
             value: `${stats.targetAchievement}%`,
             icon: TrendingUp,
-            description: 'Monthly goal',
-            trend: '+8%',
+            description: stats.ai_insights?.target_achievement?.description || 'Monthly goal',
+            trend: stats.ai_insights?.target_achievement?.trend || '+8%',
             trendUp: true,
+            aiMethod: stats.ai_insights?.target_achievement?.calculation_method,
         },
         {
             title: 'Avg Commission',
             value: `$${stats.avgCommission}`,
             icon: Activity,
-            description: 'Per recruiter',
-            trend: '+3%',
+            description: stats.ai_insights?.avg_commission?.description || 'Per recruiter',
+            trend: stats.ai_insights?.avg_commission?.trend || '+3%',
             trendUp: true,
+            aiMethod: stats.ai_insights?.avg_commission?.calculation_method,
         },
     ];
 
@@ -297,10 +327,91 @@ export default function Dashboard({ stats, connectedFile, chartData, tableData, 
                                     {kpi.trend}
                                 </Badge>
                             </div>
+                            {/* AI Insights */}
+                            {(kpi.aiSource || kpi.aiMethod) && (
+                                <div className="mt-2 pt-2 border-t border-gray-100">
+                                    <div className="flex items-center text-xs text-blue-600">
+                                        <Activity className="h-3 w-3 mr-1" />
+                                        <span className="font-medium">AI Analysis</span>
+                                    </div>
+                                    {kpi.aiSource && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Source: {kpi.aiSource}
+                                        </p>
+                                    )}
+                                    {kpi.aiMethod && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Method: {kpi.aiMethod}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 ))}
             </div>
+
+            {/* AI Insights Section */}
+            {stats.ai_insights && (
+                <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-blue-800">
+                            <Activity className="h-5 w-5 mr-2" />
+                            AI-Powered Insights
+                        </CardTitle>
+                        <CardDescription className="text-blue-600">
+                            Intelligent analysis of your data using AI/ML
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-blue-800">Data Analysis</h4>
+                                <div className="space-y-2">
+                                    {Object.entries(stats.ai_insights).map(([key, insight]) => (
+                                        <div key={key} className="flex items-center justify-between p-2 bg-white rounded border">
+                                            <span className="text-sm font-medium text-gray-700 capitalize">
+                                                {key.replace('_', ' ')}
+                                            </span>
+                                            <div className="text-right">
+                                                <div className="text-sm font-semibold text-blue-600">
+                                                    {insight.value?.toLocaleString() || 'N/A'}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {insight.description}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-blue-800">AI Recommendations</h4>
+                                <div className="space-y-2">
+                                    <div className="p-3 bg-white rounded border">
+                                        <div className="flex items-center text-sm text-gray-700">
+                                            <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
+                                            <span>Data-driven insights from AI analysis</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-white rounded border">
+                                        <div className="flex items-center text-sm text-gray-700">
+                                            <Activity className="h-4 w-4 mr-2 text-blue-500" />
+                                            <span>Automated trend detection</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-white rounded border">
+                                        <div className="flex items-center text-sm text-gray-700">
+                                            <BarChart3 className="h-4 w-4 mr-2 text-purple-500" />
+                                            <span>Smart column identification</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

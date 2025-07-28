@@ -23,3 +23,7 @@ Route::get('/combine-files', [CombineFilesController::class, 'index']);
 Route::post('/combine-files', [CombineFilesController::class, 'combineFiles']);
 Route::get('/data-sources', [DataSourcesController::class, 'index']);
 Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);
+
+// AI Analysis Routes
+Route::post('/ai/analyze-file/{fileId}', [ConnectedFilesController::class, 'analyzeFileWithAI']);
+Route::get('/ai/widget-insights/{widgetId}', [ConnectedFilesController::class, 'getWidgetInsights']);

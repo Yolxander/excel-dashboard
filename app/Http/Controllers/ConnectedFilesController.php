@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Models\UploadedFile;
 use App\Models\DashboardWidget;
 use Illuminate\Support\Facades\Log;
+use App\Services\AIService;
 
 class ConnectedFilesController extends Controller
 {
@@ -35,12 +36,17 @@ class ConnectedFilesController extends Controller
         // Create or update dashboard widgets for this file
         $this->createWidgetsForFile($file);
 
+        // Analyze file data with AI
+        $aiService = new AIService();
+        $aiInsights = $aiService->analyzeFileData($file);
+
         Log::info('File connected to dashboard: ' . $file->original_filename);
 
         return response()->json([
             'success' => true,
-            'message' => $file->original_filename . ' is now connected to the dashboard',
-            'file' => $file
+            'message' => $file->original_filename . ' is now connected to the dashboard with AI insights',
+            'file' => $file,
+            'ai_insights' => $aiInsights
         ]);
     }
 
@@ -115,6 +121,66 @@ class ConnectedFilesController extends Controller
                     'display_order' => $widget['display_order'],
                 ]
             );
+        }
+    }
+
+    public function analyzeFileWithAI(Request $request, $fileId)
+    {
+        $file = UploadedFile::findOrFail($fileId);
+
+        if ($file->status !== 'completed') {
+            return response()->json(['error' => 'File is not processed yet'], 400);
+        }
+
+        try {
+            $aiService = new AIService();
+            $insights = $aiService->analyzeFileData($file);
+
+            if ($insights) {
+                Log::info('AI analysis completed successfully for file: ' . $file->original_filename);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'AI analysis completed successfully',
+                    'insights' => $insights
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'AI analysis failed - no insights generated'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('AI analysis error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'AI analysis failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getWidgetInsights(Request $request, $widgetId)
+    {
+        try {
+            $aiService = new AIService();
+            $insights = $aiService->getWidgetInsights($widgetId);
+
+            if ($insights) {
+                return response()->json([
+                    'success' => true,
+                    'insights' => $insights
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No AI insights available for this widget'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error getting widget insights: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving widget insights: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

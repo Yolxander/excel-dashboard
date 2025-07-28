@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Models\UploadedFile;
 use App\Models\DashboardWidget;
 use Illuminate\Support\Facades\Log;
+use App\Services\AIService;
 
 class DashboardController extends Controller
 {
@@ -32,7 +33,18 @@ class DashboardController extends Controller
             $data = $file->processed_data;
             Log::info('Using data from connected file: ' . $file->original_filename);
 
-            $stats = $this->generateStatsFromData($data);
+            // Try to get AI-enhanced stats first
+            $aiService = new AIService();
+            $aiInsights = $aiService->analyzeFileData($file);
+
+            if ($aiInsights && isset($aiInsights['widget_insights'])) {
+                $stats = $this->generateStatsFromAIInsights($aiInsights['widget_insights']);
+                Log::info('Using AI-enhanced stats for dashboard');
+            } else {
+                $stats = $this->generateStatsFromData($data);
+                Log::info('Using standard stats for dashboard');
+            }
+
             $chartData = $this->generateChartDataFromData($data);
             $tableData = $this->generateTableDataFromData($data);
             $connectedFile = $file->original_filename;
@@ -70,6 +82,24 @@ class DashboardController extends Controller
         Log::info('Rendering dashboard with props: ' . json_encode($props));
 
         return Inertia::render('Dashboard', $props);
+    }
+
+    private function generateStatsFromAIInsights($widgetInsights)
+    {
+        Log::info('Generating stats from AI insights: ' . json_encode($widgetInsights));
+
+        $stats = [
+            'totalSales' => $widgetInsights['total_sales']['value'] ?? 0,
+            'activeRecruiters' => $widgetInsights['active_recruiters']['value'] ?? 0,
+            'targetAchievement' => $widgetInsights['target_achievement']['value'] ?? 0,
+            'avgCommission' => $widgetInsights['avg_commission']['value'] ?? 0,
+        ];
+
+        // Store AI insights for frontend display
+        $stats['ai_insights'] = $widgetInsights;
+
+        Log::info("AI-enhanced stats generated: " . json_encode($stats));
+        return $stats;
     }
 
     private function generateStatsFromData($data)

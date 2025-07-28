@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'aiml' => [
+        'base_url' => env('AIML_API_BASE_URL', 'https://api.aimlapi.com/v1'),
+        'api_key' => env('AIML_API_KEY'),
+    ],
+
 ];
