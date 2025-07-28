@@ -34,7 +34,7 @@ class ConnectedFilesController extends Controller
         }
 
         // Deactivate all existing widgets first
-        DashboardWidget::where('is_active', true)->update(['is_active' => false]);
+        FileWidgetConnection::where('is_displayed', true)->update(['is_displayed' => false]);
 
         // Analyze file data with AI - this will create widgets based on data analysis
         $aiService = new AIService();

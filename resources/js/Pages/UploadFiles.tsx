@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, Plus, MoreHorizontal, Trash2, Download, Eye, RefreshCw } from 'lucide-react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
+import { useToast } from '@/hooks/use-toast';
 
 interface UploadedFile {
     id: number;
@@ -87,12 +88,20 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
 
     const uploadFile = async (file: File) => {
         if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
-            alert('Please select a valid Excel or CSV file');
+            toast({
+                title: 'Invalid file type',
+                description: 'Please select a valid Excel or CSV file.',
+                variant: 'destructive',
+            });
             return;
         }
 
         if (file.size > 10 * 1024 * 1024) { // 10MB
-            alert('File size must be less than 10MB');
+            toast({
+                title: 'File too large',
+                description: 'File size must be less than 10MB.',
+                variant: 'destructive',
+            });
             return;
         }
 
@@ -108,23 +117,51 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
                     if (fileInputRef.current) {
                         fileInputRef.current.value = '';
                     }
+                    toast({
+                        title: 'File uploaded',
+                        description: `File "${file.name}" uploaded successfully.`,
+                    });
                 },
                 onError: (errors) => {
                     setUploading(false);
                     setUploadMessage('Upload failed: ' + Object.values(errors).join(', '));
                     setTimeout(() => setUploadMessage(''), 5000);
+                    toast({
+                        title: 'Upload failed',
+                        description: `Upload failed: ${Object.values(errors).join(', ')}.`,
+                        variant: 'destructive',
+                    });
                 }
             });
         } catch (error) {
             setUploading(false);
             setUploadMessage('Upload failed');
             setTimeout(() => setUploadMessage(''), 5000);
+            toast({
+                title: 'Upload failed',
+                description: 'Upload failed. Please try again.',
+                variant: 'destructive',
+            });
         }
     };
 
     const deleteFile = async (id: number) => {
-        if (confirm('Are you sure you want to delete this file?')) {
-            await router.delete(`/upload-files/${id}`);
+        const confirmed = window.confirm('Are you sure you want to delete this file? This action cannot be undone.');
+        if (confirmed) {
+            try {
+                await router.delete(`/upload-files/${id}`);
+                toast({
+                    title: 'File deleted',
+                    description: 'The file has been deleted successfully.',
+                    variant: 'success',
+                });
+            } catch (error) {
+                toast({
+                    title: 'Error deleting file',
+                    description: 'There was an error deleting the file. Please try again.',
+                    variant: 'destructive',
+                });
+            }
         }
     };
 
@@ -159,6 +196,8 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
                 return <FileText className="h-8 w-8 text-gray-500" />;
         }
     };
+
+    const { toast } = useToast();
 
     return (
         <>

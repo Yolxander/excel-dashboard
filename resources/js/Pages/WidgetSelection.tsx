@@ -22,6 +22,7 @@ import {
     Link as LinkIcon,
     Unlink,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface UploadedFile {
     id: number;
@@ -73,6 +74,7 @@ export default function WidgetSelection({
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const { toast } = useToast();
 
     // Check if selected file is connected to dashboard
     useEffect(() => {
@@ -189,11 +191,18 @@ export default function WidgetSelection({
                 })));
 
                 // Show success message
-                alert('Widget selection saved successfully!');
+                toast({
+                    title: 'Widget selection saved successfully!',
+                    description: 'Your widget selection has been saved.',
+                });
             }
         } catch (error) {
             console.error('Error saving widget selection:', error);
-            alert('Error saving widget selection. Please try again.');
+            toast({
+                title: 'Error saving widget selection.',
+                description: 'There was an error saving your widget selection. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setIsSaving(false);
         }
@@ -217,9 +226,18 @@ export default function WidgetSelection({
                 await handleFileSelect(file);
                 // Update connection status
                 setIsConnected(true);
+                toast({
+                    title: 'File connected to dashboard!',
+                    description: 'Your file has been connected to the dashboard.',
+                });
             }
         } catch (error) {
             console.error('Error connecting file:', error);
+            toast({
+                title: 'Error connecting file.',
+                description: 'There was an error connecting your file. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setIsLoading(false);
         }

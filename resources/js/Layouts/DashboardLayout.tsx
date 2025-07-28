@@ -14,6 +14,7 @@ import {
     Sparkles,
     LogOut
 } from 'lucide-react';
+import { Toaster } from '@/components/ui/toaster';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -163,6 +164,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                     {children}
                 </main>
             </div>
+            <Toaster />
         </div>
     );
 }

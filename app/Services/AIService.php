@@ -858,20 +858,20 @@ IMPORTANT:
             ->get();
 
         foreach ($widgets as $widget) {
-            $chartType = $widget->widget_type === 'bar_chart' ? 'bar_chart' : 'pie_chart';
+                $chartType = $widget->widget_type === 'bar_chart' ? 'bar_chart' : 'pie_chart';
 
-            if (isset($chartRecommendations[$chartType])) {
-                $chartConfig = $chartRecommendations[$chartType];
+                if (isset($chartRecommendations[$chartType])) {
+                    $chartConfig = $chartRecommendations[$chartType];
 
-                $currentConfig = $widget->widget_config ?? [];
-                $currentConfig['ai_chart_config'] = $chartConfig;
-                $currentConfig['last_ai_analysis'] = now()->toISOString();
+                    $currentConfig = $widget->widget_config ?? [];
+                    $currentConfig['ai_chart_config'] = $chartConfig;
+                    $currentConfig['last_ai_analysis'] = now()->toISOString();
 
-                $widget->update([
-                    'widget_config' => $currentConfig
-                ]);
+                    $widget->update([
+                        'widget_config' => $currentConfig
+                    ]);
 
-                Log::info("Updated chart widget '{$widget->widget_name}' with AI recommendations");
+                    Log::info("Updated chart widget '{$widget->widget_name}' with AI recommendations");
             }
         }
     }
