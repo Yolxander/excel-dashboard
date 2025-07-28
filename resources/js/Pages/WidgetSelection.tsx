@@ -1,12 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { Head, Link } from '@inertiajs/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Database, BarChart3, PieChart, Table as TableIcon, Settings, Save, CheckCircle, RefreshCw, Link as LinkIcon, BrainCircuit, Sparkles, FileText } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import {
+    FileText,
+    BarChart3,
+    PieChart,
+    TrendingUp,
+    Table,
+    Plus,
+    X,
+    BrainCircuit,
+    Settings,
+    CheckCircle,
+    Circle,
+    ArrowLeft,
+    Save,
+    RefreshCw,
+    Database,
+    Link as LinkIcon
+} from 'lucide-react';
 
 interface UploadedFile {
     id: number;
@@ -56,10 +79,42 @@ export default function WidgetSelection({
         displayedWidgets.map(w => w.id)
     );
     const [isLoading, setIsLoading] = useState(false);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+    const [isAddingWidget, setIsAddingWidget] = useState(false);
+    const [newWidgetName, setNewWidgetName] = useState('');
+    const [newWidgetType, setNewWidgetType] = useState('kpi');
+    const [newWidgetConfig, setNewWidgetConfig] = useState<any>({});
     const { toast } = useToast();
+
+    // Initialize state on component mount
+    useEffect(() => {
+        // Set initial widgets state
+        if (availableWidgets.length > 0) {
+            setWidgets(availableWidgets);
+            setDisplayedWidgetIds(displayedWidgets.map(w => w.id));
+        }
+    }, [availableWidgets, displayedWidgets]);
+
+    // Load widgets when component mounts or currentFile changes
+    useEffect(() => {
+        const loadInitialData = async () => {
+            if (currentFile) {
+                await handleFileSelect(currentFile);
+            } else if (availableWidgets.length > 0) {
+                // If no currentFile but we have availableWidgets, use the first file
+                const firstFile = uploadedFiles.find(f => f.id === availableWidgets[0].uploaded_file_id);
+                if (firstFile) {
+                    await handleFileSelect(firstFile);
+                }
+            }
+            setIsInitialLoading(false);
+        };
+
+        loadInitialData();
+    }, [currentFile, availableWidgets, uploadedFiles]);
 
     // Check if selected file is connected to dashboard
     useEffect(() => {
@@ -72,13 +127,13 @@ export default function WidgetSelection({
     const getWidgetIcon = (widgetType: string) => {
         switch (widgetType) {
             case 'kpi':
-                return <Database className="h-4 w-4 text-blue-600" />;
+                return <BrainCircuit className="h-4 w-4 text-blue-600" />;
             case 'bar_chart':
                 return <BarChart3 className="h-4 w-4 text-green-600" />;
             case 'pie_chart':
                 return <PieChart className="h-4 w-4 text-purple-600" />;
             case 'table':
-                return <TableIcon className="h-4 w-4 text-orange-600" />;
+                return <Table className="h-4 w-4 text-orange-600" />;
             default:
                 return <FileText className="h-4 w-4 text-gray-600" />;
         }
@@ -160,6 +215,42 @@ export default function WidgetSelection({
 
             // Add the widget to selection
             setDisplayedWidgetIds(prev => [...prev, widgetId]);
+        }
+    };
+
+    const handleRemoveWidget = async (widgetId: number) => {
+        try {
+            const response = await fetch(`/widget-selection/remove-widget/${widgetId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remove from displayed widgets if it was selected
+                setDisplayedWidgetIds(prev => prev.filter(id => id !== widgetId));
+
+                // Remove from widgets list
+                setWidgets(prev => prev.filter(widget => widget.id !== widgetId));
+
+                toast({
+                    title: 'Widget removed!',
+                    description: 'The widget has been removed successfully.',
+                });
+            } else {
+                throw new Error(data.message || 'Failed to remove widget');
+            }
+        } catch (error) {
+            console.error('Error removing widget:', error);
+            toast({
+                title: 'Error removing widget',
+                description: error.message || 'There was an error removing the widget. Please try again.',
+                variant: 'destructive',
+            });
         }
     };
 
@@ -370,8 +461,20 @@ export default function WidgetSelection({
                         </div>
 
                         {/* Widget Selection */}
-                        <div className="lg:col-span-2">
-                            {selectedFile ? (
+                        <div className="lg:col-span-2" key={selectedFile?.id || 'no-file'}>
+                            {isInitialLoading ? (
+                                <Card>
+                                    <CardContent className="p-8 text-center">
+                                        <RefreshCw className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
+                                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                            Loading Widgets...
+                                        </h3>
+                                        <p className="text-gray-600">
+                                            Please wait while we load your widgets
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            ) : selectedFile ? (
                                 <div className="space-y-6">
                                     {/* Current File Info */}
                                     <Card>
@@ -483,9 +586,24 @@ export default function WidgetSelection({
                                                         <Database className="h-5 w-5 mr-2" />
                                                         KPI Widgets
                                                     </div>
-                                                    <Badge variant="outline" className="text-blue-600 border-blue-200">
-                                                        {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'kpi').length}/4 Selected
-                                                    </Badge>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                                            {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'kpi').length}/4 Selected
+                                                        </Badge>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setNewWidgetType('kpi');
+                                                                setNewWidgetName('');
+                                                                setNewWidgetConfig({});
+                                                                setIsAddingWidget(true);
+                                                            }}
+                                                        >
+                                                            <Plus className="h-4 w-4 mr-1" />
+                                                            Add KPI
+                                                        </Button>
+                                                    </div>
                                                 </CardTitle>
                                                 <CardDescription>
                                                     Select up to 4 KPI widgets to display on your dashboard
@@ -511,23 +629,33 @@ export default function WidgetSelection({
                                                                         : 'border-gray-200 hover:border-gray-300'
                                                                 }`}
                                                             >
-                                                                <div className="flex items-center space-x-3">
-                                                                    <Checkbox
-                                                                        checked={isSelected}
-                                                                        onCheckedChange={() => handleWidgetToggle(widget.id)}
-                                                                        disabled={isDisabled}
-                                                                    />
-                                                                    <div className="flex items-center space-x-2">
-                                                                        {getWidgetIcon(widget.widget_type)}
-                                                                        <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
-                                                                            {widget.widget_name}
-                                                                        </span>
-                                                                        {isDisabled && (
-                                                                            <Badge variant="secondary" className="text-xs">
-                                                                                Limit Reached
-                                                                            </Badge>
-                                                                        )}
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <Checkbox
+                                                                            checked={isSelected}
+                                                                            onCheckedChange={() => handleWidgetToggle(widget.id)}
+                                                                            disabled={isDisabled}
+                                                                        />
+                                                                        <div className="flex items-center space-x-2">
+                                                                            {getWidgetIcon(widget.widget_type)}
+                                                                            <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
+                                                                                {widget.widget_name}
+                                                                            </span>
+                                                                            {isDisabled && (
+                                                                                <Badge variant="secondary" className="text-xs">
+                                                                                    Limit Reached
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => handleRemoveWidget(widget.id)}
+                                                                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                    >
+                                                                        <X className="h-4 w-4" />
+                                                                    </Button>
                                                                 </div>
                                                                 {widget.widget_config?.description && (
                                                                     <p className={`text-sm mt-2 ml-6 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -551,9 +679,24 @@ export default function WidgetSelection({
                                                         <BarChart3 className="h-5 w-5 mr-2" />
                                                         Chart Widgets
                                                     </div>
-                                                    <Badge variant="outline" className="text-blue-600 border-blue-200">
-                                                        {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'bar_chart' || widgets.find(w => w.id === id)?.widget_type === 'pie_chart').length}/2 Selected
-                                                    </Badge>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                                            {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'bar_chart' || widgets.find(w => w.id === id)?.widget_type === 'pie_chart').length}/2 Selected
+                                                        </Badge>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setNewWidgetType('bar_chart');
+                                                                setNewWidgetName('');
+                                                                setNewWidgetConfig({});
+                                                                setIsAddingWidget(true);
+                                                            }}
+                                                        >
+                                                            <Plus className="h-4 w-4 mr-1" />
+                                                            Add Chart
+                                                        </Button>
+                                                    </div>
                                                 </CardTitle>
                                                 <CardDescription>
                                                     Select up to 2 chart widgets to display on your dashboard
@@ -580,23 +723,33 @@ export default function WidgetSelection({
                                                                         : 'border-gray-200 hover:border-gray-300'
                                                                 }`}
                                                             >
-                                                                <div className="flex items-center space-x-3">
-                                                                    <Checkbox
-                                                                        checked={isSelected}
-                                                                        onCheckedChange={() => handleWidgetToggle(widget.id)}
-                                                                        disabled={isDisabled}
-                                                                    />
-                                                                    <div className="flex items-center space-x-2">
-                                                                        {getWidgetIcon(widget.widget_type)}
-                                                                        <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
-                                                                            {widget.widget_name}
-                                                                        </span>
-                                                                        {isDisabled && (
-                                                                            <Badge variant="secondary" className="text-xs">
-                                                                                Limit Reached
-                                                                            </Badge>
-                                                                        )}
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <Checkbox
+                                                                            checked={isSelected}
+                                                                            onCheckedChange={() => handleWidgetToggle(widget.id)}
+                                                                            disabled={isDisabled}
+                                                                        />
+                                                                        <div className="flex items-center space-x-2">
+                                                                            {getWidgetIcon(widget.widget_type)}
+                                                                            <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
+                                                                                {widget.widget_name}
+                                                                            </span>
+                                                                            {isDisabled && (
+                                                                                <Badge variant="secondary" className="text-xs">
+                                                                                    Limit Reached
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => handleRemoveWidget(widget.id)}
+                                                                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                    >
+                                                                        <X className="h-4 w-4" />
+                                                                    </Button>
                                                                 </div>
                                                                 {widget.widget_config?.description && (
                                                                     <p className={`text-sm mt-2 ml-6 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -616,7 +769,7 @@ export default function WidgetSelection({
                                         <Card>
                                             <CardHeader>
                                                 <CardTitle className="flex items-center">
-                                                    <TableIcon className="h-5 w-5 mr-2" />
+                                                    <FileText className="h-5 w-5 mr-2" />
                                                     Table Widgets
                                                 </CardTitle>
                                             </CardHeader>
@@ -652,6 +805,301 @@ export default function WidgetSelection({
                                             </CardContent>
                                         </Card>
                                     )}
+
+                                    {/* Add New Widget Modal */}
+                                    <Dialog open={isAddingWidget} onOpenChange={setIsAddingWidget}>
+                                        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                                            <DialogHeader className="space-y-3">
+                                                <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                                                    <Plus className="h-6 w-6 mr-2 text-blue-600" />
+                                                    Add New Widget
+                                                </DialogTitle>
+                                                <DialogDescription className="text-gray-600 text-base">
+                                                    Create a new widget for this file using AI or manual configuration.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-6 py-6">
+                                                {/* Creation Method Selection */}
+                                                <div className="space-y-3">
+                                                    <Label className="text-sm font-semibold text-gray-700">
+                                                        Creation Method
+                                                    </Label>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <Button
+                                                            variant={newWidgetConfig.method === 'ai' ? 'default' : 'outline'}
+                                                            onClick={() => setNewWidgetConfig({ ...newWidgetConfig, method: 'ai' })}
+                                                            className={`h-auto p-4 flex flex-col items-center space-y-2 ${
+                                                                newWidgetConfig.method === 'ai'
+                                                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                                                    : 'hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            <BrainCircuit className="h-6 w-6" />
+                                                            <span className="font-medium">AI Generated</span>
+                                                            <span className="text-xs text-gray-500">Let AI create the widget</span>
+                                                        </Button>
+                                                        <Button
+                                                            variant={newWidgetConfig.method === 'manual' ? 'default' : 'outline'}
+                                                            onClick={() => setNewWidgetConfig({ ...newWidgetConfig, method: 'manual' })}
+                                                            className={`h-auto p-4 flex flex-col items-center space-y-2 ${
+                                                                newWidgetConfig.method === 'manual'
+                                                                    ? 'bg-green-50 border-green-200 text-green-700'
+                                                                    : 'hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            <Settings className="h-6 w-6" />
+                                                            <span className="font-medium">Manual</span>
+                                                            <span className="text-xs text-gray-500">Configure manually</span>
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Widget Name - Only for Manual Method */}
+                                                {newWidgetConfig.method === 'manual' && (
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="widget-name" className="text-sm font-semibold text-gray-700">
+                                                            Widget Name
+                                                        </Label>
+                                                        <Input
+                                                            id="widget-name"
+                                                            value={newWidgetName}
+                                                            onChange={(e) => setNewWidgetName(e.target.value)}
+                                                            placeholder="Enter a descriptive name for your widget"
+                                                            className="h-12 text-base"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {/* AI Method Form */}
+                                                {newWidgetConfig.method === 'ai' && (
+                                                    <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                                        <Label htmlFor="ai-description" className="text-sm font-semibold text-gray-700">
+                                                            What should this widget be about?
+                                                        </Label>
+                                                        <Textarea
+                                                            id="ai-description"
+                                                            value={newWidgetConfig.aiDescription || ''}
+                                                            onChange={(e) => setNewWidgetConfig({ ...newWidgetConfig, aiDescription: e.target.value })}
+                                                            placeholder="(Optional) Describe what you want this widget to show or analyze. For example: 'Show total sales by month' or 'Display customer satisfaction trends'. Leave empty to let AI generate a new widget automatically."
+                                                            className="min-h-[100px] text-base resize-none"
+                                                        />
+                                                        <p className="text-xs text-gray-500">
+                                                            Optional: Be specific about what data you want to visualize or analyze. Leave empty to let AI generate a completely new widget.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Manual Method Form */}
+                                                {newWidgetConfig.method === 'manual' && (
+                                                    <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                                                        {/* Widget Type Selection */}
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="widget-type" className="text-sm font-semibold text-gray-700">
+                                                                Widget Type
+                                                            </Label>
+                                                            <Select onValueChange={(value) => setNewWidgetType(value)} value={newWidgetType}>
+                                                                <SelectTrigger className="h-12 text-base">
+                                                                    <SelectValue placeholder="Select a widget type" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="kpi" className="flex items-center space-x-2">
+                                                                        <TrendingUp className="h-4 w-4 mr-2" />
+                                                                        KPI Widget
+                                                                    </SelectItem>
+                                                                    <SelectItem value="bar_chart" className="flex items-center space-x-2">
+                                                                        <BarChart3 className="h-4 w-4 mr-2" />
+                                                                        Bar Chart
+                                                                    </SelectItem>
+                                                                    <SelectItem value="pie_chart" className="flex items-center space-x-2">
+                                                                        <PieChart className="h-4 w-4 mr-2" />
+                                                                        Pie Chart
+                                                                    </SelectItem>
+                                                                    <SelectItem value="table" className="flex items-center space-x-2">
+                                                                        <Table className="h-4 w-4 mr-2" />
+                                                                        Table
+                                                                    </SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+
+                                                        {/* Column Selection */}
+                                                        {selectedFile?.processed_data?.headers && (
+                                                            <div className="space-y-2">
+                                                                <Label htmlFor="column-select" className="text-sm font-semibold text-gray-700">
+                                                                    Select Column
+                                                                </Label>
+                                                                <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, column: value })} value={newWidgetConfig.column}>
+                                                                    <SelectTrigger className="h-12 text-base">
+                                                                        <SelectValue placeholder="Choose a column from your data" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {selectedFile.processed_data.headers.map((header: string) => (
+                                                                            <SelectItem key={header} value={header}>
+                                                                                {header}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Chart Configuration for Chart Widgets */}
+                                                        {(newWidgetType === 'bar_chart' || newWidgetType === 'pie_chart') && (
+                                                            <div className="space-y-4 p-4 bg-white rounded-lg border border-gray-200">
+                                                                <h4 className="font-semibold text-gray-700 mb-3">Chart Configuration</h4>
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label htmlFor="x-axis" className="text-sm font-medium text-gray-600">
+                                                                            X-Axis
+                                                                        </Label>
+                                                                        <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, xAxis: value })} value={newWidgetConfig.xAxis}>
+                                                                            <SelectTrigger className="h-10">
+                                                                                <SelectValue placeholder="Select X-Axis" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {selectedFile?.processed_data?.headers?.map((header: string) => (
+                                                                                    <SelectItem key={header} value={header}>
+                                                                                        {header}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <Label htmlFor="y-axis" className="text-sm font-medium text-gray-600">
+                                                                            Y-Axis
+                                                                        </Label>
+                                                                        <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, yAxis: value })} value={newWidgetConfig.yAxis}>
+                                                                            <SelectTrigger className="h-10">
+                                                                                <SelectValue placeholder="Select Y-Axis" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {selectedFile?.processed_data?.headers?.map((header: string) => (
+                                                                                    <SelectItem key={header} value={header}>
+                                                                                        {header}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => setIsAddingWidget(false)}
+                                                    className="px-6 py-2"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    onClick={async () => {
+                                                                                                                if (newWidgetConfig.method === 'ai') {
+                                                            console.log('Starting AI widget creation...', {
+                                                                file_id: selectedFile?.id,
+                                                                description: newWidgetConfig.aiDescription || '',
+                                                                widget_type: newWidgetType,
+                                                            });
+
+                                                            // Show progress toast for AI widget creation
+                                                            const progressToast = toast({
+                                                                title: 'Creating AI Widget...',
+                                                                description: 'Please wait while AI generates your widget.',
+                                                                duration: Infinity, // Keep toast open until completion
+                                                            });
+
+                                                            try {
+                                                                // Call AI service to create widget
+                                                                const response = await fetch('/ai/create-widget', {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'Content-Type': 'application/json',
+                                                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        file_id: selectedFile?.id,
+                                                                        description: newWidgetConfig.aiDescription || '',
+                                                                        widget_type: newWidgetType,
+                                                                    }),
+                                                                });
+
+                                                                console.log('Response status:', response.status);
+                                                                const data = await response.json();
+                                                                console.log('Response data:', data);
+
+                                                                if (data.success) {
+                                                                    // Close progress toast and show success
+                                                                    progressToast.dismiss();
+                                                                    toast({
+                                                                        title: 'AI Widget Created!',
+                                                                        description: `Widget "${data.widget_name || 'New Widget'}" has been created successfully.`,
+                                                                        duration: 5000,
+                                                                    });
+
+                                                                    // Reload widgets for the file
+                                                                    if (selectedFile) {
+                                                                        await handleFileSelect(selectedFile);
+                                                                    }
+
+                                                                    // Close the modal and reset form
+                                                                    setIsAddingWidget(false);
+                                                                    setNewWidgetConfig({});
+                                                                    setNewWidgetName('');
+                                                                } else {
+                                                                    throw new Error(data.message || 'Failed to create widget');
+                                                                }
+                                                            } catch (error) {
+                                                                console.error('Error creating AI widget:', error);
+                                                                progressToast.dismiss();
+                                                                toast({
+                                                                    title: 'Error creating widget',
+                                                                    description: error.message || 'There was an error creating the widget. Please try again.',
+                                                                    variant: 'destructive',
+                                                                    duration: 5000,
+                                                                });
+                                                            }
+                                                        } else if (newWidgetConfig.method === 'manual') {
+                                                            // Create manual widget
+                                                            console.log('Creating manual widget:', {
+                                                                name: newWidgetName,
+                                                                type: newWidgetType,
+                                                                method: 'manual',
+                                                                config: newWidgetConfig,
+                                                                fileId: selectedFile?.id,
+                                                            });
+
+                                                            toast({
+                                                                title: 'Widget created!',
+                                                                description: `Widget "${newWidgetName}" has been created successfully.`,
+                                                            });
+
+                                                            // Reload widgets for the file
+                                                            if (selectedFile) {
+                                                                await handleFileSelect(selectedFile);
+                                                            }
+
+                                                            // Close the modal and reset form
+                                                            setIsAddingWidget(false);
+                                                            setNewWidgetConfig({});
+                                                            setNewWidgetName('');
+                                                        }
+                                                    }}
+                                                    disabled={
+                                                        !newWidgetConfig.method ||
+                                                        (newWidgetConfig.method === 'manual' && (!newWidgetName || !newWidgetConfig.column))
+                                                    }
+                                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700"
+                                                >
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    Create Widget
+                                                </Button>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
 
                                     {/* Save Button */}
                                     <div className="flex justify-end">

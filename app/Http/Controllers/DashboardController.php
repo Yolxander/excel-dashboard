@@ -38,14 +38,13 @@ class DashboardController extends Controller
             $data = $file->processed_data;
             Log::info('Using data from connected file: ' . $file->original_filename);
 
-            // Try to get AI-enhanced stats first
-            $aiService = new AIService();
-            $aiInsights = $aiService->analyzeFileData($file);
+            // Use existing AI insights from the file if available, don't trigger new analysis
+            $aiInsights = $file->ai_insights;
 
             if ($aiInsights && isset($aiInsights['widget_insights'])) {
                 $stats = $this->generateStatsFromAIInsights($aiInsights['widget_insights']);
                 $chartData = $this->generateChartDataFromAIInsights($aiInsights);
-                Log::info('Using AI-enhanced stats and charts for dashboard');
+                Log::info('Using existing AI-enhanced stats and charts for dashboard');
             } else {
                 $stats = $this->generateStatsFromData($data);
                 $chartData = $this->generateChartDataFromData($data);

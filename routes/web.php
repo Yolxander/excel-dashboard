@@ -54,3 +54,5 @@ Route::get('/widget-selection', [App\Http\Controllers\WidgetSelectionController:
 Route::get('/widget-selection/widgets/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetsForFile'])->name('widget-selection.widgets');
 Route::post('/widget-selection/update', [App\Http\Controllers\WidgetSelectionController::class, 'updateWidgetSelection'])->name('widget-selection.update');
 Route::post('/widget-selection/connect/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'connectFile'])->name('widget-selection.connect');
+Route::delete('/widget-selection/remove-widget/{widgetId}', [App\Http\Controllers\WidgetSelectionController::class, 'removeWidget'])->name('widget-selection.remove-widget');
+Route::post('/ai/create-widget', [App\Http\Controllers\WidgetSelectionController::class, 'createAIWidget'])->name('ai.create-widget');

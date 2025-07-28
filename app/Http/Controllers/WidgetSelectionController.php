@@ -161,4 +161,130 @@ class WidgetSelectionController extends Controller
             'message' => $file->original_filename . ' is now connected to the dashboard',
         ]);
     }
+
+    public function createAIWidget(Request $request)
+    {
+        Log::info('AI Widget creation request received', $request->all());
+
+        $request->validate([
+            'file_id' => 'required|exists:uploaded_files,id',
+            'description' => 'nullable|string',
+            'widget_type' => 'required|string',
+        ]);
+
+        // Verify the file belongs to the authenticated user
+        $file = UploadedFile::where('id', $request->file_id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        Log::info('File found for AI widget creation', ['file_id' => $file->id, 'filename' => $file->original_filename]);
+
+        try {
+            // Get AI service instance
+            $aiService = app(\App\Services\AIService::class);
+
+            Log::info('Calling AI service to create widget', [
+                'file_id' => $file->id,
+                'description' => $request->description,
+                'widget_type' => $request->widget_type
+            ]);
+
+            // Generate widget using AI
+            $widgetData = $aiService->createWidget(
+                $file,
+                $request->description,
+                $request->widget_type
+            );
+
+            Log::info('AI service returned widget data', $widgetData);
+
+            // Generate unique widget name if it already exists
+            $baseName = $widgetData['name'];
+            $widgetName = $baseName;
+            $counter = 1;
+
+            while (FileWidgetConnection::where('uploaded_file_id', $file->id)
+                    ->where('widget_name', $widgetName)
+                    ->exists()) {
+                $widgetName = $baseName . ' (' . $counter . ')';
+                $counter++;
+            }
+
+            // Create the widget connection
+                                    // Ensure widget config includes description
+                        $widgetConfig = $widgetData['config'];
+                        if (!isset($widgetConfig['description']) && isset($widgetData['insights']['description'])) {
+                            $widgetConfig['description'] = $widgetData['insights']['description'];
+                        }
+
+                        $widgetConnection = FileWidgetConnection::create([
+                            'uploaded_file_id' => $file->id,
+                            'widget_name' => $widgetName,
+                            'widget_type' => $widgetData['type'],
+                            'widget_config' => $widgetConfig,
+                            'is_displayed' => true,
+                            'display_order' => FileWidgetConnection::where('uploaded_file_id', $file->id)->max('display_order') + 1,
+                            'ai_insights' => $widgetData['insights'] ?? null,
+                        ]);
+
+            // The widget is automatically connected to the user through the file relationship
+            // FileWidgetConnection -> UploadedFile -> User (through user_id)
+
+                        Log::info('Widget created successfully', [
+                'widget_id' => $widgetConnection->id,
+                'widget_name' => $widgetName,
+                'widget_type' => $widgetConnection->widget_type
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'widget_name' => $widgetName,
+                'widget_id' => $widgetConnection->id,
+                'message' => 'Widget created successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error creating AI widget: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create widget: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function removeWidget(Request $request, $widgetId)
+    {
+        try {
+            // Find the widget and verify it belongs to the authenticated user
+            $widget = FileWidgetConnection::where('id', $widgetId)
+                ->whereHas('uploadedFile', function($query) {
+                    $query->where('user_id', Auth::id());
+                })
+                ->firstOrFail();
+
+            Log::info('Removing widget', [
+                'widget_id' => $widget->id,
+                'widget_name' => $widget->widget_name,
+                'file_id' => $widget->uploaded_file_id
+            ]);
+
+            // Delete the widget
+            $widget->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Widget removed successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error removing widget: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove widget: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

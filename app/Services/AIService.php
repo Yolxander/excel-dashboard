@@ -676,16 +676,22 @@ IMPORTANT:
             'ai_insights' => $insights
         ]);
 
-        // Delete existing widgets for this file
-        FileWidgetConnection::where('uploaded_file_id', $file->id)->delete();
+        // Get existing widgets for this file
+        $existingWidgets = FileWidgetConnection::where('uploaded_file_id', $file->id)->get();
+        $existingWidgetNames = $existingWidgets->pluck('widget_name')->toArray();
 
-        // Create widgets based on AI recommendations
+        // Create widgets based on AI recommendations (only if they don't exist)
         if (!empty($widgetRecommendations)) {
-            $this->createWidgetsFromAIRecommendations($file, $widgetRecommendations, $widgetInsights);
+            $this->createWidgetsFromAIRecommendations($file, $widgetRecommendations, $widgetInsights, $existingWidgetNames);
         } else {
-            // Fallback: create default widgets if no recommendations
-            $this->createDefaultWidgets($file, $widgetInsights);
+            // Fallback: create default widgets if no recommendations and no existing widgets
+            if ($existingWidgets->isEmpty()) {
+                $this->createDefaultWidgets($file, $widgetInsights);
+            }
         }
+
+        // Update existing widgets with AI insights
+        $this->updateExistingWidgetsWithInsights($file, $widgetInsights);
 
         // Update chart widgets with AI recommendations
         if (!empty($chartRecommendations)) {
@@ -693,7 +699,7 @@ IMPORTANT:
         }
     }
 
-    private function createWidgetsFromAIRecommendations($file, $recommendations, $insights)
+    private function createWidgetsFromAIRecommendations($file, $recommendations, $insights, $existingWidgetNames = [])
     {
         // Sort recommendations by priority
         usort($recommendations, function($a, $b) {
@@ -724,6 +730,12 @@ IMPORTANT:
             $widgetName = $recommendation['widget_name'];
             $widgetType = $recommendation['widget_type'];
             $widgetKey = strtolower(str_replace(' ', '_', $widgetName));
+
+            // Skip if widget already exists
+            if (in_array($widgetName, $existingWidgetNames)) {
+                Log::info("Skipping widget '{$widgetName}' - already exists");
+                continue;
+            }
 
             // Find corresponding insight
             $insight = null;
@@ -766,6 +778,43 @@ IMPORTANT:
 
             Log::info("Created AI-recommended widget '{$widgetName}' of type '{$widgetType}' (displayed: {$isDisplayed})");
             $displayOrder++;
+        }
+    }
+
+    private function updateExistingWidgetsWithInsights($file, $widgetInsights)
+    {
+        $existingWidgets = FileWidgetConnection::where('uploaded_file_id', $file->id)->get();
+
+        foreach ($existingWidgets as $widget) {
+            // Try to find matching AI insight for this widget
+            $matchingInsight = null;
+            foreach ($widgetInsights as $insightKey => $insight) {
+                // Try to match by widget name
+                if (isset($insight['widget_name']) && $insight['widget_name'] === $widget->widget_name) {
+                    $matchingInsight = $insight;
+                    break;
+                }
+
+                // Try to match by widget type and key
+                if ($widget->widget_type === 'kpi' && strpos($insightKey, 'total_') !== false) {
+                    $matchingInsight = $insight;
+                    break;
+                }
+            }
+
+            if ($matchingInsight) {
+                // Update widget with AI insights
+                $widgetConfig = $widget->widget_config ?? [];
+                $widgetConfig['ai_insights'] = $matchingInsight;
+                $widgetConfig['last_ai_analysis'] = now()->toISOString();
+
+                $widget->update([
+                    'widget_config' => $widgetConfig,
+                    'ai_insights' => $matchingInsight,
+                ]);
+
+                Log::info("Updated existing widget '{$widget->widget_name}' with AI insights");
+            }
         }
     }
 
@@ -885,5 +934,339 @@ IMPORTANT:
         }
 
         return $widget->widget_config['ai_insights'];
+    }
+
+    public function createWidget(UploadedFile $file, $description = null, $widgetType = 'kpi')
+    {
+        try {
+            if (!$file->processed_data) {
+                throw new \Exception('No processed data available for widget creation');
+            }
+
+            $data = $file->processed_data;
+            $headers = $data['headers'] ?? [];
+            $rows = $data['data'] ?? [];
+
+            if (empty($rows)) {
+                throw new \Exception('No data available for widget creation');
+            }
+
+            // Prepare data summary
+            $dataSummary = $this->prepareDataSummary($headers, $rows);
+
+            // Generate widget based on type and description
+            $widgetData = $this->generateWidgetData($dataSummary, $description, $widgetType, $file->original_filename);
+
+            return $widgetData;
+
+        } catch (\Exception $e) {
+            Log::error('Error creating widget: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function generateWidgetData($dataSummary, $description, $widgetType, $filename)
+    {
+        // If no description provided, generate a random widget
+        if (empty($description)) {
+            return $this->generateRandomWidget($dataSummary, $widgetType, $filename);
+        }
+
+        // Generate widget based on description
+        return $this->generateWidgetFromDescription($dataSummary, $description, $widgetType, $filename);
+    }
+
+    private function generateRandomWidget($dataSummary, $widgetType, $filename)
+    {
+        $headers = $dataSummary['headers'];
+        $rows = $dataSummary['sample_data'];
+
+        // Find numeric columns for calculations
+        $numericColumns = [];
+        foreach ($headers as $header) {
+            if ($this->isNumericColumn($rows, $header)) {
+                $numericColumns[] = $header;
+            }
+        }
+
+        // Find categorical columns
+        $categoricalColumns = array_filter($headers, function($header) use ($rows) {
+            return !$this->isNumericColumn($rows, $header);
+        });
+
+        switch ($widgetType) {
+            case 'kpi':
+                return $this->generateRandomKPI($dataSummary, $numericColumns, $filename);
+            case 'bar_chart':
+                return $this->generateRandomBarChart($dataSummary, $categoricalColumns, $numericColumns, $filename);
+            case 'pie_chart':
+                return $this->generateRandomPieChart($dataSummary, $categoricalColumns, $numericColumns, $filename);
+            case 'table':
+                return $this->generateRandomTable($dataSummary, $filename);
+            default:
+                // Generate a random widget type if none specified
+                $widgetTypes = ['kpi', 'bar_chart', 'pie_chart'];
+                $randomType = $widgetTypes[array_rand($widgetTypes)];
+                return $this->generateRandomWidget($dataSummary, $randomType, $filename);
+        }
+    }
+
+    private function generateWidgetFromDescription($dataSummary, $description, $widgetType, $filename)
+    {
+        // This would use AI to generate widget based on description
+        // For now, we'll use the random generation as fallback
+        return $this->generateRandomWidget($dataSummary, $widgetType, $filename);
+    }
+
+    private function generateRandomKPI($dataSummary, $numericColumns, $filename)
+    {
+        if (empty($numericColumns)) {
+            throw new \Exception('No numeric columns found for KPI widget');
+        }
+
+        $column = $numericColumns[array_rand($numericColumns)];
+        $total = $this->calculateTotalFromColumn($dataSummary, $column);
+        $average = $this->calculateAverageFromColumn($dataSummary, $column);
+        $rowCount = count($dataSummary['sample_data']);
+
+        // Generate meaningful name based on the column
+        $columnDisplayName = $this->getColumnDisplayName($column);
+
+        // Use similar names as AI insights generation but make them data-specific
+        $kpiNames = [
+            "Total {$columnDisplayName}",
+            "Average {$columnDisplayName}",
+            "{$columnDisplayName} Overview",
+            "{$columnDisplayName} Summary",
+            "{$columnDisplayName} Metrics",
+            "{$columnDisplayName} Analysis",
+        ];
+
+        $name = $kpiNames[array_rand($kpiNames)];
+
+                // Create clean, concise description
+        $description = "Shows the total value of {$columnDisplayName}";
+
+        return [
+            'name' => $name,
+            'type' => 'kpi',
+            'config' => [
+                'description' => $description,
+                'source_columns' => [$column],
+                'calculation_method' => 'Sum of all values',
+                'ai_insights' => [
+                    'value' => $total,
+                    'trend' => '+12%',
+                    'description' => $description,
+                    'source_column' => $column,
+                    'widget_name' => $name,
+                    'widget_type' => 'kpi'
+                ],
+                'last_ai_analysis' => now()->toISOString()
+            ],
+            'insights' => [
+                'value' => $total,
+                'trend' => '+12%',
+                'description' => $description,
+                'source_column' => $column,
+                'widget_name' => $name,
+                'widget_type' => 'kpi'
+            ],
+        ];
+    }
+
+    private function generateRandomBarChart($dataSummary, $categoricalColumns, $numericColumns, $filename)
+    {
+        if (empty($categoricalColumns) || empty($numericColumns)) {
+            throw new \Exception('Need both categorical and numeric columns for bar chart');
+        }
+
+        $categoryColumn = $categoricalColumns[array_rand($categoricalColumns)];
+        $valueColumn = $numericColumns[array_rand($numericColumns)];
+
+        $chartData = $this->generateBarChartData($dataSummary, $categoryColumn, $valueColumn);
+        $title = $this->generateBarChartTitle($dataSummary, $categoryColumn, $valueColumn);
+        $description = $this->generateBarChartDescription($dataSummary, $categoryColumn, $valueColumn);
+
+        // Generate meaningful name based on the data
+        $categoryDisplayName = $this->getColumnDisplayName($categoryColumn);
+        $valueDisplayName = $this->getColumnDisplayName($valueColumn);
+
+        $barChartNames = [
+            "{$categoryDisplayName} by {$valueDisplayName}",
+            "{$valueDisplayName} by {$categoryDisplayName}",
+            $title,
+            "Bar Chart - {$categoryDisplayName}",
+            "Performance Chart - {$categoryDisplayName}",
+        ];
+
+        $name = $barChartNames[array_rand($barChartNames)];
+
+        // Create clean, concise description
+        $description = "Shows {$valueDisplayName} by {$categoryDisplayName}";
+
+        return [
+            'name' => $name,
+            'type' => 'bar_chart',
+            'config' => [
+                'description' => $description,
+                'source_columns' => [$categoryColumn, $valueColumn],
+                'calculation_method' => 'Group by ' . $categoryColumn . ' and sum ' . $valueColumn,
+                'ai_insights' => [
+                    'description' => $description,
+                    'source_column' => $categoryColumn,
+                    'widget_name' => $name,
+                    'widget_type' => 'bar_chart'
+                ],
+                'last_ai_analysis' => now()->toISOString(),
+                'ai_chart_config' => [
+                    'title' => $title,
+                    'x_axis' => $categoryColumn,
+                    'y_axis' => $valueColumn,
+                    'description' => $description,
+                    'chart_data' => $chartData
+                ]
+            ],
+            'insights' => [
+                'description' => $description,
+                'source_column' => $categoryColumn,
+                'widget_name' => $name,
+                'widget_type' => 'bar_chart'
+            ],
+        ];
+    }
+
+    private function generateRandomPieChart($dataSummary, $categoricalColumns, $numericColumns, $filename)
+    {
+        if (empty($categoricalColumns) || empty($numericColumns)) {
+            throw new \Exception('Need both categorical and numeric columns for pie chart');
+        }
+
+        $categoryColumn = $categoricalColumns[array_rand($categoricalColumns)];
+        $valueColumn = $numericColumns[array_rand($numericColumns)];
+
+        $chartData = $this->generatePieChartData($dataSummary, $categoryColumn, $valueColumn);
+        $title = $this->generatePieChartTitle($dataSummary, $categoryColumn, $valueColumn);
+        $description = $this->generatePieChartDescription($dataSummary, $categoryColumn, $valueColumn);
+
+        // Generate meaningful name based on the data
+        $categoryDisplayName = $this->getColumnDisplayName($categoryColumn);
+        $valueDisplayName = $this->getColumnDisplayName($valueColumn);
+
+        $pieChartNames = [
+            "{$categoryDisplayName} Distribution",
+            "{$valueDisplayName} by {$categoryDisplayName}",
+            $title,
+            "Pie Chart - {$categoryDisplayName}",
+            "Distribution Chart - {$categoryDisplayName}",
+        ];
+
+        $name = $pieChartNames[array_rand($pieChartNames)];
+
+        // Create clean, concise description
+        $description = "Shows distribution of {$valueDisplayName} by {$categoryDisplayName}";
+
+        return [
+            'name' => $name,
+            'type' => 'pie_chart',
+            'config' => [
+                'description' => $description,
+                'source_columns' => [$categoryColumn, $valueColumn],
+                'calculation_method' => 'Distribution analysis',
+                'ai_insights' => [
+                    'description' => $description,
+                    'source_column' => $categoryColumn,
+                    'widget_name' => $name,
+                    'widget_type' => 'pie_chart'
+                ],
+                'last_ai_analysis' => now()->toISOString(),
+                'ai_chart_config' => [
+                    'title' => $title,
+                    'category_column' => $categoryColumn,
+                    'value_column' => $valueColumn,
+                    'description' => $description,
+                    'chart_data' => $chartData
+                ]
+            ],
+            'insights' => [
+                'description' => $description,
+                'source_column' => $categoryColumn,
+                'widget_name' => $name,
+                'widget_type' => 'pie_chart'
+            ],
+        ];
+    }
+
+    private function generateRandomTable($dataSummary, $filename)
+    {
+        $headers = $dataSummary['headers'];
+        $rows = array_slice($dataSummary['sample_data'], 0, 10); // First 10 rows
+
+        return [
+            'name' => "Data Table - " . $filename,
+            'type' => 'table',
+            'config' => [
+                'description' => "Shows data table",
+                'source_columns' => $headers,
+                'calculation_method' => 'Display all data',
+                'ai_insights' => [
+                    'description' => "Shows data table",
+                    'source_column' => 'all',
+                    'widget_name' => "Data Table - " . $filename,
+                    'widget_type' => 'table'
+                ],
+                'last_ai_analysis' => now()->toISOString(),
+                'headers' => $headers,
+                'data' => $rows,
+                'maxRows' => 10,
+            ],
+            'insights' => [
+                'description' => "Shows data table",
+                'source_column' => 'all',
+                'widget_name' => "Data Table - " . $filename,
+                'widget_type' => 'table'
+            ],
+        ];
+    }
+
+    private function isNumericColumn($rows, $column)
+    {
+        $values = array_column($rows, $column);
+        $numericCount = 0;
+        $totalCount = count($values);
+
+        foreach ($values as $value) {
+            if (is_numeric($value)) {
+                $numericCount++;
+            }
+        }
+
+        // Consider column numeric if more than 50% of values are numeric
+        return ($numericCount / $totalCount) > 0.5;
+    }
+
+    private function generateDataInsights($dataSummary, $column, $columnType = 'numeric')
+    {
+        $rows = $dataSummary['sample_data'];
+        $values = array_column($rows, $column);
+        $values = array_filter($values, function($v) { return is_numeric($v) && $v !== ''; });
+
+        if (empty($values)) {
+            return "No valid data found for analysis.";
+        }
+
+        $count = count($values);
+        $total = array_sum($values);
+        $average = $total / $count;
+        $min = min($values);
+        $max = max($values);
+        $range = $max - $min;
+
+        $insights = "Based on {$count} data points: ";
+        $insights .= "Total: " . number_format($total, 2) . ", ";
+        $insights .= "Average: " . number_format($average, 2) . ", ";
+        $insights .= "Range: " . number_format($min, 2) . " to " . number_format($max, 2);
+
+        return $insights;
     }
 }

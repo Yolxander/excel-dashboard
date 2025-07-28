@@ -48,24 +48,16 @@ class ConnectedFilesController extends Controller
             })
             ->update(['is_displayed' => false]);
 
-        // Analyze file data with AI - this will create widgets based on data analysis
-        $aiService = new AIService();
-        $aiInsights = $aiService->analyzeFileData($file);
-
-        // Generate chart data from AI insights if available
-        $chartData = [];
-        if ($aiInsights && isset($aiInsights['chart_recommendations'])) {
-            $chartData = $this->generateChartDataFromAIInsights($aiInsights);
-        }
+        // Set all widgets for this file as displayed
+        FileWidgetConnection::where('uploaded_file_id', $fileId)
+            ->update(['is_displayed' => true]);
 
         Log::info('File connected to dashboard: ' . $file->original_filename);
 
         return response()->json([
             'success' => true,
-            'message' => $file->original_filename . ' is now connected to the dashboard with AI insights',
+            'message' => $file->original_filename . ' is now connected to the dashboard',
             'file' => $file,
-            'ai_insights' => $aiInsights,
-            'chart_data' => $chartData
         ]);
     }
 
@@ -106,7 +98,7 @@ class ConnectedFilesController extends Controller
                 Log::info('AI analysis completed successfully for file: ' . $file->original_filename);
                 return response()->json([
                     'success' => true,
-                    'message' => 'AI analysis completed successfully',
+                    'message' => 'AI analysis completed successfully. New widgets have been created and existing widgets have been enhanced with AI insights.',
                     'insights' => $insights
                 ]);
             } else {
