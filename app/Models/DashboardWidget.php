@@ -10,6 +10,7 @@ class DashboardWidget extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'widget_type',
         'widget_name',
         'widget_config',
@@ -22,6 +23,11 @@ class DashboardWidget extends Model
         'widget_config' => 'array',
         'is_active' => 'boolean',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function uploadedFile()
     {

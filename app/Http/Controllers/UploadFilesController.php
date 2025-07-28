@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Models\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
@@ -14,7 +15,9 @@ class UploadFilesController extends Controller
 {
         public function index()
     {
-        $uploadedFiles = UploadedFile::orderBy('created_at', 'desc')->get();
+        $uploadedFiles = UploadedFile::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return Inertia::render('UploadFiles', [
             'uploadedFiles' => $uploadedFiles,
@@ -37,6 +40,7 @@ class UploadFilesController extends Controller
             $fileType = $file->getClientOriginalExtension();
 
             $uploadedFile = UploadedFile::create([
+                'user_id' => Auth::id(),
                 'filename' => $filename,
                 'original_filename' => $originalName,
                 'file_path' => $filePath,
@@ -128,7 +132,9 @@ class UploadFilesController extends Controller
 
     public function destroy($id)
     {
-        $file = UploadedFile::findOrFail($id);
+        $file = UploadedFile::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         // Delete the physical file
         Storage::disk('public')->delete($file->file_path);

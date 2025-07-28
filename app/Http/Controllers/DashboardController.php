@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Models\UploadedFile;
 use App\Models\FileWidgetConnection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use App\Services\AIService;
 
 class DashboardController extends Controller
@@ -15,6 +16,9 @@ class DashboardController extends Controller
     {
         // Get the currently displayed widgets
         $displayedWidgets = FileWidgetConnection::with('uploadedFile')
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->where('is_displayed', true)
             ->whereNotNull('uploaded_file_id')
             ->whereHas('uploadedFile', function($query) {
@@ -612,6 +616,9 @@ class DashboardController extends Controller
     {
         // Get the most recently connected file from dashboard widgets
         $activeWidget = FileWidgetConnection::with('uploadedFile')
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->where('is_displayed', true)
             ->whereNotNull('uploaded_file_id')
             ->whereHas('uploadedFile', function($query) {
@@ -657,6 +664,9 @@ class DashboardController extends Controller
     {
         // Get the most recently connected file from dashboard widgets
         $activeWidget = FileWidgetConnection::with('uploadedFile')
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->where('is_displayed', true)
             ->whereNotNull('uploaded_file_id')
             ->whereHas('uploadedFile', function($query) {

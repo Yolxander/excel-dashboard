@@ -7,12 +7,14 @@ use Inertia\Inertia;
 use App\Models\UploadedFile;
 use App\Models\FileWidgetConnection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class WidgetSelectionController extends Controller
 {
     public function index()
     {
-        $uploadedFiles = UploadedFile::where('status', 'completed')
+        $uploadedFiles = UploadedFile::where('user_id', Auth::id())
+            ->where('status', 'completed')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -22,6 +24,9 @@ class WidgetSelectionController extends Controller
 
         // Get the currently connected file
         $connectedFile = FileWidgetConnection::with('uploadedFile')
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->where('is_displayed', true)
             ->orderBy('display_order')
             ->first();
@@ -51,7 +56,9 @@ class WidgetSelectionController extends Controller
 
     public function getWidgetsForFile(Request $request, $fileId)
     {
-        $file = UploadedFile::findOrFail($fileId);
+        $file = UploadedFile::where('id', $fileId)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         $availableWidgets = FileWidgetConnection::where('uploaded_file_id', $file->id)
             ->orderBy('display_order')
@@ -80,6 +87,11 @@ class WidgetSelectionController extends Controller
         $fileId = $request->fileId;
         $selectedWidgetIds = $request->selectedWidgetIds;
 
+        // Verify the file belongs to the authenticated user
+        $file = UploadedFile::where('id', $fileId)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
         Log::info("Updating widget selection for file ID: {$fileId}");
         Log::info("Selected widget IDs: " . json_encode($selectedWidgetIds));
 
@@ -105,7 +117,7 @@ class WidgetSelectionController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        Log::info("Updated widgets for file ID {$fileId}: " . json_encode($updatedWidgets->toArray()));
+
 
         return response()->json([
             'success' => true,
@@ -115,7 +127,9 @@ class WidgetSelectionController extends Controller
 
     public function connectFile(Request $request, $fileId)
     {
-        $file = UploadedFile::findOrFail($fileId);
+        $file = UploadedFile::where('id', $fileId)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         if ($file->status !== 'completed') {
             return response()->json(['error' => 'File is not processed yet'], 400);
@@ -129,6 +143,9 @@ class WidgetSelectionController extends Controller
 
         // Set all widgets for other files as not displayed
         $otherWidgets = FileWidgetConnection::where('uploaded_file_id', '!=', $fileId)
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->update(['is_displayed' => false]);
 
         // Log the connected widgets

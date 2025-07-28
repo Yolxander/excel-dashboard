@@ -45,4 +45,14 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function uploadedFiles()
+    {
+        return $this->hasMany(UploadedFile::class);
+    }
+
+    public function dashboardWidgets()
+    {
+        return $this->hasMany(DashboardWidget::class);
+    }
 }

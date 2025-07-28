@@ -9,6 +9,7 @@ use App\Models\DashboardWidget;
 use App\Services\AIService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -17,11 +18,13 @@ class CombineFilesController extends Controller
 {
     public function index()
     {
-        $uploadedFiles = UploadedFile::where('status', 'completed')
+        $uploadedFiles = UploadedFile::where('user_id', Auth::id())
+            ->where('status', 'completed')
             ->orderBy('created_at', 'desc')
             ->get();
 
         $connectedWidgets = DashboardWidget::with('uploadedFile')
+            ->where('user_id', Auth::id())
             ->where('is_active', true)
             ->orderBy('display_order')
             ->get();
@@ -41,6 +44,7 @@ class CombineFilesController extends Controller
             ]);
 
             $selectedFiles = UploadedFile::whereIn('id', $request->selectedFiles)
+                ->where('user_id', Auth::id())
                 ->where('status', 'completed')
                 ->get();
 
@@ -122,6 +126,7 @@ class CombineFilesController extends Controller
             ]);
 
             $selectedFiles = UploadedFile::whereIn('id', $request->selectedFiles)
+                ->where('user_id', Auth::id())
                 ->where('status', 'completed')
                 ->get();
 
@@ -272,7 +277,9 @@ class CombineFilesController extends Controller
         ]);
 
         try {
-            $file = UploadedFile::findOrFail($fileId);
+            $file = UploadedFile::where('id', $fileId)
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
 
             if ($file->status !== 'completed') {
                 return response()->json([
@@ -513,6 +520,7 @@ Focus on identifying sales, revenue, commission, recruiter, and performance-rela
                 [
                     'widget_type' => $widget['widget_type'],
                     'widget_name' => $widget['widget_name'],
+                    'user_id' => Auth::id(),
                 ],
                 [
                     'widget_config' => $widget['widget_config'],

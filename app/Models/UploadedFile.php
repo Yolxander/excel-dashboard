@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class UploadedFile extends Model
 {
     protected $fillable = [
+        'user_id',
         'filename',
         'original_filename',
         'file_path',
@@ -22,6 +23,11 @@ class UploadedFile extends Model
         'processed_data' => 'array',
         'ai_insights' => 'array',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function getFormattedFileSizeAttribute()
     {

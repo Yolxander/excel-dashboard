@@ -7,14 +7,20 @@ use Inertia\Inertia;
 use App\Models\UploadedFile;
 use App\Models\FileWidgetConnection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use App\Services\AIService;
 
 class ConnectedFilesController extends Controller
 {
     public function index()
     {
-        $uploadedFiles = UploadedFile::orderBy('created_at', 'desc')->get();
+        $uploadedFiles = UploadedFile::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get();
         $displayedWidgets = FileWidgetConnection::with('uploadedFile')
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->where('is_displayed', true)
             ->orderBy('display_order')
             ->get();
@@ -27,14 +33,20 @@ class ConnectedFilesController extends Controller
 
     public function connectFile(Request $request, $fileId)
     {
-        $file = UploadedFile::findOrFail($fileId);
+        $file = UploadedFile::where('id', $fileId)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         if ($file->status !== 'completed') {
             return response()->json(['error' => 'File is not processed yet'], 400);
         }
 
         // Deactivate all existing widgets first
-        FileWidgetConnection::where('is_displayed', true)->update(['is_displayed' => false]);
+        FileWidgetConnection::where('is_displayed', true)
+            ->whereHas('uploadedFile', function($query) {
+                $query->where('user_id', Auth::id());
+            })
+            ->update(['is_displayed' => false]);
 
         // Analyze file data with AI - this will create widgets based on data analysis
         $aiService = new AIService();
@@ -59,7 +71,9 @@ class ConnectedFilesController extends Controller
 
     public function disconnectFile(Request $request, $fileId)
     {
-        $file = UploadedFile::findOrFail($fileId);
+        $file = UploadedFile::where('id', $fileId)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         // Disconnect widgets from this file
         FileWidgetConnection::where('uploaded_file_id', $fileId)->update([
@@ -76,7 +90,9 @@ class ConnectedFilesController extends Controller
 
     public function analyzeFileWithAI(Request $request, $fileId)
     {
-        $file = UploadedFile::findOrFail($fileId);
+        $file = UploadedFile::where('id', $fileId)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         if ($file->status !== 'completed') {
             return response()->json(['error' => 'File is not processed yet'], 400);
