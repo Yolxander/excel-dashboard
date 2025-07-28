@@ -16,5 +16,7 @@ Route::get('/test-upload', function() {
     return response()->json($files);
 });
 Route::get('/connected-files', [ConnectedFilesController::class, 'index']);
+Route::post('/connected-files/{fileId}/connect', [ConnectedFilesController::class, 'connectFile']);
+Route::post('/connected-files/{fileId}/disconnect', [ConnectedFilesController::class, 'disconnectFile']);
 Route::get('/data-sources', [DataSourcesController::class, 'index']);
 Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);

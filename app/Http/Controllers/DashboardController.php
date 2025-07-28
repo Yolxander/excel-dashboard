@@ -5,30 +5,39 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\UploadedFile;
+use App\Models\DashboardWidget;
 use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
-    public function index()
+        public function index()
     {
-        // Get the most recent completed file
-        $latestFile = UploadedFile::where('status', 'completed')
-            ->orderBy('created_at', 'desc')
+        // Get the active connected file from dashboard widgets
+        $activeWidget = DashboardWidget::with('uploadedFile')
+            ->where('is_active', true)
+            ->whereNotNull('uploaded_file_id')
+            ->orderBy('display_order')
             ->first();
 
-                if ($latestFile && $latestFile->processed_data) {
-            $data = $latestFile->processed_data;
-            Log::info('Using data from file: ' . $latestFile->original_filename);
+        $connectedFile = null;
+        $stats = [];
+        $chartData = [];
+        $tableData = [];
+
+        if ($activeWidget && $activeWidget->uploadedFile && $activeWidget->uploadedFile->processed_data) {
+            $file = $activeWidget->uploadedFile;
+            $data = $file->processed_data;
+            Log::info('Using data from connected file: ' . $file->original_filename);
 
             $stats = $this->generateStatsFromData($data);
             $chartData = $this->generateChartDataFromData($data);
             $tableData = $this->generateTableDataFromData($data);
-            $connectedFile = $latestFile->original_filename;
+            $connectedFile = $file->original_filename;
 
-            Log::info('Generated dynamic data for dashboard');
+            Log::info('Generated dynamic data for dashboard from connected file');
         } else {
-            Log::info('No completed files found, using default data');
-            // Fallback to mock data if no files are uploaded
+            Log::info('No connected files found, using default data');
+            // Fallback to mock data if no files are connected
             $stats = [
                 'totalSales' => 456789,
                 'activeRecruiters' => 24,

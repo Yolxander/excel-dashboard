@@ -32,4 +32,9 @@ class UploadedFile extends Model
 
         return round($bytes, 1) . ' ' . $units[$i];
     }
+
+    public function dashboardWidgets()
+    {
+        return $this->hasMany(DashboardWidget::class);
+    }
 }
