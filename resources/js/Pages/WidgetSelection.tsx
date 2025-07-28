@@ -943,8 +943,8 @@ export default function WidgetSelection({
                                                             </div>
                                                         )}
 
-                                                        {/* Chart Configuration for Chart Widgets */}
-                                                        {(newWidgetType === 'bar_chart' || newWidgetType === 'pie_chart') && (
+                                                        {/* Chart Configuration for Bar Charts */}
+                                                        {newWidgetType === 'bar_chart' && (
                                                             <div className="space-y-4 p-4 bg-white rounded-lg border border-gray-200">
                                                                 <h4 className="font-semibold text-gray-700 mb-3">Chart Configuration</h4>
                                                                 <div className="grid grid-cols-2 gap-4">
@@ -972,6 +972,49 @@ export default function WidgetSelection({
                                                                         <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, yAxis: value })} value={newWidgetConfig.yAxis}>
                                                                             <SelectTrigger className="h-10">
                                                                                 <SelectValue placeholder="Select Y-Axis" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {selectedFile?.processed_data?.headers?.map((header: string) => (
+                                                                                    <SelectItem key={header} value={header}>
+                                                                                        {header}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Chart Configuration for Pie Charts */}
+                                                        {newWidgetType === 'pie_chart' && (
+                                                            <div className="space-y-4 p-4 bg-white rounded-lg border border-gray-200">
+                                                                <h4 className="font-semibold text-gray-700 mb-3">Chart Configuration</h4>
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label htmlFor="category-column" className="text-sm font-medium text-gray-600">
+                                                                            Category Column
+                                                                        </Label>
+                                                                        <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, categoryColumn: value })} value={newWidgetConfig.categoryColumn}>
+                                                                            <SelectTrigger className="h-10">
+                                                                                <SelectValue placeholder="Select Category Column" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {selectedFile?.processed_data?.headers?.map((header: string) => (
+                                                                                    <SelectItem key={header} value={header}>
+                                                                                        {header}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                    <div className="space-y-2">
+                                                                        <Label htmlFor="value-column" className="text-sm font-medium text-gray-600">
+                                                                            Value Column
+                                                                        </Label>
+                                                                        <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, valueColumn: value })} value={newWidgetConfig.valueColumn}>
+                                                                            <SelectTrigger className="h-10">
+                                                                                <SelectValue placeholder="Select Value Column" />
                                                                             </SelectTrigger>
                                                                             <SelectContent>
                                                                                 {selectedFile?.processed_data?.headers?.map((header: string) => (
@@ -1072,25 +1115,65 @@ export default function WidgetSelection({
                                                                 fileId: selectedFile?.id,
                                                             });
 
-                                                            toast({
-                                                                title: 'Widget created!',
-                                                                description: `Widget "${newWidgetName}" has been created successfully.`,
-                                                            });
+                                                            try {
+                                                                // Call manual widget creation API
+                                                                const response = await fetch('/widget-selection/create-manual-widget', {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'Content-Type': 'application/json',
+                                                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        file_id: selectedFile?.id,
+                                                                        widget_name: newWidgetName,
+                                                                        widget_type: newWidgetType,
+                                                                        column: newWidgetConfig.column,
+                                                                        x_axis: newWidgetConfig.xAxis,
+                                                                        y_axis: newWidgetConfig.yAxis,
+                                                                        category_column: newWidgetConfig.categoryColumn,
+                                                                        value_column: newWidgetConfig.valueColumn,
+                                                                    }),
+                                                                });
 
-                                                            // Reload widgets for the file
-                                                            if (selectedFile) {
-                                                                await handleFileSelect(selectedFile);
+                                                                const data = await response.json();
+
+                                                                if (data.success) {
+                                                                    toast({
+                                                                        title: 'Widget created!',
+                                                                        description: `Widget "${data.widget_name}" has been created successfully.`,
+                                                                    });
+
+                                                                    // Reload widgets for the file
+                                                                    if (selectedFile) {
+                                                                        await handleFileSelect(selectedFile);
+                                                                    }
+
+                                                                    // Close the modal and reset form
+                                                                    setIsAddingWidget(false);
+                                                                    setNewWidgetConfig({});
+                                                                    setNewWidgetName('');
+                                                                } else {
+                                                                    throw new Error(data.message || 'Failed to create widget');
+                                                                }
+                                                            } catch (error) {
+                                                                console.error('Error creating manual widget:', error);
+                                                                toast({
+                                                                    title: 'Error creating widget',
+                                                                    description: error.message || 'There was an error creating the widget. Please try again.',
+                                                                    variant: 'destructive',
+                                                                    duration: 5000,
+                                                                });
                                                             }
-
-                                                            // Close the modal and reset form
-                                                            setIsAddingWidget(false);
-                                                            setNewWidgetConfig({});
-                                                            setNewWidgetName('');
                                                         }
                                                     }}
                                                     disabled={
                                                         !newWidgetConfig.method ||
-                                                        (newWidgetConfig.method === 'manual' && (!newWidgetName || !newWidgetConfig.column))
+                                                        (newWidgetConfig.method === 'manual' && (
+                                                            !newWidgetName ||
+                                                            (newWidgetType === 'kpi' && !newWidgetConfig.column) ||
+                                                            (newWidgetType === 'bar_chart' && (!newWidgetConfig.xAxis || !newWidgetConfig.yAxis)) ||
+                                                            (newWidgetType === 'pie_chart' && (!newWidgetConfig.categoryColumn || !newWidgetConfig.valueColumn))
+                                                        ))
                                                     }
                                                     className="px-6 py-2 bg-blue-600 hover:bg-blue-700"
                                                 >
