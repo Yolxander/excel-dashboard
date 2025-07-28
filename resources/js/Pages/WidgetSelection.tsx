@@ -137,32 +137,45 @@ export default function WidgetSelection({
         const widget = widgets.find(w => w.id === widgetId);
         if (!widget) return;
 
-        const currentKpiSelected = displayedWidgetIds.filter(id =>
-            widgets.find(w => w.id === id)?.widget_type === 'kpi'
-        ).length;
+        const isCurrentlySelected = displayedWidgetIds.includes(widgetId);
 
-        const currentChartSelected = displayedWidgetIds.filter(id =>
-            widgets.find(w => w.id === id)?.widget_type === 'bar_chart' ||
-            widgets.find(w => w.id === id)?.widget_type === 'pie_chart'
-        ).length;
+        if (isCurrentlySelected) {
+            // Deselecting is always allowed
+            setDisplayedWidgetIds(prev => prev.filter(id => id !== widgetId));
+        } else {
+            // Check limits before selecting
+            if (widget.widget_type === 'kpi') {
+                const currentKpiCount = displayedWidgetIds.filter(id =>
+                    widgets.find(w => w.id === id)?.widget_type === 'kpi'
+                ).length;
 
-        // Check limits
-        if (widget.widget_type === 'kpi' && !displayedWidgetIds.includes(widgetId) && currentKpiSelected >= 4) {
-            return; // Can't select more than 4 KPI widgets
-        }
+                if (currentKpiCount >= 4) {
+                    toast({
+                        title: 'Selection limit reached',
+                        description: 'You can only select up to 4 KPI widgets. Please deselect another KPI widget first.',
+                        variant: 'warning',
+                    });
+                    return;
+                }
+            } else if (widget.widget_type === 'bar_chart' || widget.widget_type === 'pie_chart') {
+                const currentChartCount = displayedWidgetIds.filter(id =>
+                    widgets.find(w => w.id === id)?.widget_type === 'bar_chart' ||
+                    widgets.find(w => w.id === id)?.widget_type === 'pie_chart'
+                ).length;
 
-        if ((widget.widget_type === 'bar_chart' || widget.widget_type === 'pie_chart') &&
-            !displayedWidgetIds.includes(widgetId) && currentChartSelected >= 2) {
-            return; // Can't select more than 2 chart widgets
-        }
-
-        setDisplayedWidgetIds(prev => {
-            if (prev.includes(widgetId)) {
-                return prev.filter(id => id !== widgetId);
-            } else {
-                return [...prev, widgetId];
+                if (currentChartCount >= 2) {
+                    toast({
+                        title: 'Selection limit reached',
+                        description: 'You can only select up to 2 chart widgets. Please deselect another chart widget first.',
+                        variant: 'warning',
+                    });
+                    return;
+                }
             }
-        });
+
+            // Add the widget to selection
+            setDisplayedWidgetIds(prev => [...prev, widgetId]);
+        }
     };
 
     const handleSaveSelection = async () => {
@@ -368,47 +381,90 @@ export default function WidgetSelection({
                                         </CardHeader>
                                     </Card>
 
+                                    {/* Selection Limits Reminder */}
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <div className="flex items-start space-x-3">
+                                            <div className="flex-shrink-0">
+                                                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                                    <span className="text-blue-600 text-sm font-bold">!</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-sm font-medium text-blue-900 mb-1">
+                                                    Selection Limits Reminder
+                                                </h3>
+                                                <div className="text-sm text-blue-700 space-y-1">
+                                                    <p>• You can select <strong>up to 4 KPI widgets</strong> (currently {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'kpi').length}/4 selected)</p>
+                                                    <p>• You can select <strong>up to 2 chart widgets</strong> (currently {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'bar_chart' || widgets.find(w => w.id === id)?.widget_type === 'pie_chart').length}/2 selected)</p>
+                                                    <p>• Only selected widgets will appear on your dashboard</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* KPI Widgets */}
                                     {kpiWidgets.length > 0 && (
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle className="flex items-center">
-                                                    <Database className="h-5 w-5 mr-2" />
-                                                    KPI Widgets (Select up to 4 of 6)
+                                                <CardTitle className="flex items-center justify-between">
+                                                    <div className="flex items-center">
+                                                        <Database className="h-5 w-5 mr-2" />
+                                                        KPI Widgets
+                                                    </div>
+                                                    <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                                        {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'kpi').length}/4 Selected
+                                                    </Badge>
                                                 </CardTitle>
+                                                <CardDescription>
+                                                    Select up to 4 KPI widgets to display on your dashboard
+                                                </CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {kpiWidgets.map((widget) => (
-                                                        <div
-                                                            key={widget.id}
-                                                            className={`p-4 border rounded-lg ${
-                                                                displayedWidgetIds.includes(widget.id)
-                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                    : 'border-gray-200'
-                                                            }`}
-                                                        >
-                                                            <div className="flex items-center space-x-3">
-                                                                <Checkbox
-                                                                    checked={displayedWidgetIds.includes(widget.id)}
-                                                                    onCheckedChange={() => handleWidgetToggle(widget.id)}
-                                                                    disabled={!displayedWidgetIds.includes(widget.id) &&
-                                                                        displayedWidgetIds.filter(id =>
-                                                                            widgets.find(w => w.id === id)?.widget_type === 'kpi'
-                                                                        ).length >= 4}
-                                                                />
-                                                                <div className="flex items-center space-x-2">
-                                                                    {getWidgetIcon(widget.widget_type)}
-                                                                    <span className="font-medium">{widget.widget_name}</span>
+                                                    {kpiWidgets.map((widget) => {
+                                                        const isSelected = displayedWidgetIds.includes(widget.id);
+                                                        const isDisabled = !isSelected &&
+                                                            displayedWidgetIds.filter(id =>
+                                                                widgets.find(w => w.id === id)?.widget_type === 'kpi'
+                                                            ).length >= 4;
+
+                                                        return (
+                                                            <div
+                                                                key={widget.id}
+                                                                className={`p-4 border rounded-lg transition-colors ${
+                                                                    isSelected
+                                                                        ? 'border-blue-500 bg-blue-50'
+                                                                        : isDisabled
+                                                                        ? 'border-gray-200 bg-gray-50 opacity-60'
+                                                                        : 'border-gray-200 hover:border-gray-300'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center space-x-3">
+                                                                    <Checkbox
+                                                                        checked={isSelected}
+                                                                        onCheckedChange={() => handleWidgetToggle(widget.id)}
+                                                                        disabled={isDisabled}
+                                                                    />
+                                                                    <div className="flex items-center space-x-2">
+                                                                        {getWidgetIcon(widget.widget_type)}
+                                                                        <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
+                                                                            {widget.widget_name}
+                                                                        </span>
+                                                                        {isDisabled && (
+                                                                            <Badge variant="secondary" className="text-xs">
+                                                                                Limit Reached
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
+                                                                {widget.widget_config?.description && (
+                                                                    <p className={`text-sm mt-2 ml-6 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                                        {widget.widget_config.description}
+                                                                    </p>
+                                                                )}
                                                             </div>
-                                                            {widget.widget_config?.description && (
-                                                                <p className="text-sm text-gray-600 mt-2 ml-6">
-                                                                    {widget.widget_config.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -418,44 +474,66 @@ export default function WidgetSelection({
                                     {chartWidgets.length > 0 && (
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle className="flex items-center">
-                                                    <BarChart3 className="h-5 w-5 mr-2" />
-                                                    Chart Widgets (Select up to 2 of 4)
+                                                <CardTitle className="flex items-center justify-between">
+                                                    <div className="flex items-center">
+                                                        <BarChart3 className="h-5 w-5 mr-2" />
+                                                        Chart Widgets
+                                                    </div>
+                                                    <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                                        {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'bar_chart' || widgets.find(w => w.id === id)?.widget_type === 'pie_chart').length}/2 Selected
+                                                    </Badge>
                                                 </CardTitle>
+                                                <CardDescription>
+                                                    Select up to 2 chart widgets to display on your dashboard
+                                                </CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {chartWidgets.map((widget) => (
-                                                        <div
-                                                            key={widget.id}
-                                                            className={`p-4 border rounded-lg ${
-                                                                displayedWidgetIds.includes(widget.id)
-                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                    : 'border-gray-200'
-                                                            }`}
-                                                        >
-                                                            <div className="flex items-center space-x-3">
-                                                                <Checkbox
-                                                                    checked={displayedWidgetIds.includes(widget.id)}
-                                                                    onCheckedChange={() => handleWidgetToggle(widget.id)}
-                                                                    disabled={!displayedWidgetIds.includes(widget.id) &&
-                                                                        displayedWidgetIds.filter(id =>
-                                                                            widgets.find(w => w.id === id)?.widget_type === 'bar_chart' ||
-                                                                            widgets.find(w => w.id === id)?.widget_type === 'pie_chart'
-                                                                        ).length >= 2}
-                                                                />
-                                                                <div className="flex items-center space-x-2">
-                                                                    {getWidgetIcon(widget.widget_type)}
-                                                                    <span className="font-medium">{widget.widget_name}</span>
+                                                    {chartWidgets.map((widget) => {
+                                                        const isSelected = displayedWidgetIds.includes(widget.id);
+                                                        const isDisabled = !isSelected &&
+                                                            displayedWidgetIds.filter(id =>
+                                                                widgets.find(w => w.id === id)?.widget_type === 'bar_chart' ||
+                                                                widgets.find(w => w.id === id)?.widget_type === 'pie_chart'
+                                                            ).length >= 2;
+
+                                                        return (
+                                                            <div
+                                                                key={widget.id}
+                                                                className={`p-4 border rounded-lg transition-colors ${
+                                                                    isSelected
+                                                                        ? 'border-blue-500 bg-blue-50'
+                                                                        : isDisabled
+                                                                        ? 'border-gray-200 bg-gray-50 opacity-60'
+                                                                        : 'border-gray-200 hover:border-gray-300'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center space-x-3">
+                                                                    <Checkbox
+                                                                        checked={isSelected}
+                                                                        onCheckedChange={() => handleWidgetToggle(widget.id)}
+                                                                        disabled={isDisabled}
+                                                                    />
+                                                                    <div className="flex items-center space-x-2">
+                                                                        {getWidgetIcon(widget.widget_type)}
+                                                                        <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
+                                                                            {widget.widget_name}
+                                                                        </span>
+                                                                        {isDisabled && (
+                                                                            <Badge variant="secondary" className="text-xs">
+                                                                                Limit Reached
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
+                                                                {widget.widget_config?.description && (
+                                                                    <p className={`text-sm mt-2 ml-6 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                                        {widget.widget_config.description}
+                                                                    </p>
+                                                                )}
                                                             </div>
-                                                            {widget.widget_config?.description && (
-                                                                <p className="text-sm text-gray-600 mt-2 ml-6">
-                                                                    {widget.widget_config.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </CardContent>
                                         </Card>
