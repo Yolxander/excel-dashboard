@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\UploadedFile;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -17,10 +18,16 @@ class DashboardController extends Controller
 
         if ($latestFile && $latestFile->processed_data) {
             $data = $latestFile->processed_data;
+            Log::info('Using data from file: ' . $latestFile->original_filename);
+            Log::info('Data structure: ' . json_encode(array_keys($data)));
+
             $stats = $this->generateStatsFromData($data);
             $recentOrders = $this->generateRecentOrdersFromData($data);
             $connectedFile = $latestFile->original_filename;
+
+            Log::info('Generated stats: ' . json_encode($stats));
         } else {
+            Log::info('No completed files found, using default data');
             // Fallback to mock data if no files are uploaded
             $stats = [
                 'totalSales' => 456789,
@@ -76,10 +83,13 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function generateStatsFromData($data)
+        private function generateStatsFromData($data)
     {
         $rows = $data['data'] ?? [];
         $headers = $data['headers'] ?? [];
+
+        Log::info('Processing stats from data with headers: ' . implode(', ', $headers));
+        Log::info('Number of rows: ' . count($rows));
 
         if (empty($rows)) {
             return $this->getDefaultStats();
@@ -87,9 +97,11 @@ class DashboardController extends Controller
 
         // Try to identify relevant columns
         $salesColumn = $this->findColumn($headers, ['sales', 'amount', 'revenue', 'total', 'price']);
-        $recruiterColumn = $this->findColumn($headers, ['recruiter', 'employee', 'staff', 'name']);
+        $recruiterColumn = $this->findColumn($headers, ['recruiter', 'employee', 'staff', 'name', 'salesperson']);
         $statusColumn = $this->findColumn($headers, ['status', 'state', 'condition']);
         $dateColumn = $this->findColumn($headers, ['date', 'created', 'timestamp']);
+
+        Log::info('Found columns - Sales: ' . ($salesColumn ?? 'not found') . ', Recruiter: ' . ($recruiterColumn ?? 'not found'));
 
         $totalSales = 0;
         $activeRecruiters = 0;
@@ -126,6 +138,8 @@ class DashboardController extends Controller
         $targetAchievement = $totalSalesCount > 0 ? round(($completedSales / $totalSalesCount) * 100) : 87;
         $avgCommission = $activeRecruiters > 0 ? round($totalSales / $activeRecruiters) : 1250;
 
+        Log::info("Calculated stats - Total Sales: $totalSales, Active Recruiters: $activeRecruiters, Target Achievement: $targetAchievement");
+
         return [
             'totalSales' => $totalSales > 0 ? $totalSales : 456789,
             'activeRecruiters' => $activeRecruiters > 0 ? $activeRecruiters : 24,
@@ -134,20 +148,24 @@ class DashboardController extends Controller
         ];
     }
 
-    private function generateRecentOrdersFromData($data)
+        private function generateRecentOrdersFromData($data)
     {
         $rows = $data['data'] ?? [];
         $headers = $data['headers'] ?? [];
+
+        Log::info('Generating recent orders from data');
 
         if (empty($rows)) {
             return $this->getDefaultRecentOrders();
         }
 
         // Try to identify relevant columns
-        $customerColumn = $this->findColumn($headers, ['customer', 'client', 'name', 'buyer']);
+        $customerColumn = $this->findColumn($headers, ['customer', 'client', 'name', 'buyer', 'salesperson']);
         $amountColumn = $this->findColumn($headers, ['amount', 'sales', 'revenue', 'total', 'price']);
         $statusColumn = $this->findColumn($headers, ['status', 'state', 'condition']);
         $dateColumn = $this->findColumn($headers, ['date', 'created', 'timestamp']);
+
+        Log::info('Found columns for orders - Customer: ' . ($customerColumn ?? 'not found') . ', Amount: ' . ($amountColumn ?? 'not found'));
 
         $recentOrders = [];
         $count = 0;
@@ -169,6 +187,8 @@ class DashboardController extends Controller
             $count++;
             if ($count >= 5) break;
         }
+
+        Log::info('Generated ' . count($recentOrders) . ' recent orders');
 
         return $recentOrders;
     }

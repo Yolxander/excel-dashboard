@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,13 +25,34 @@ interface UploadedFile {
 
 interface UploadFilesProps {
     uploadedFiles: UploadedFile[];
+    success?: string;
+    error?: string;
 }
 
-export default function UploadFiles({ uploadedFiles }: UploadFilesProps) {
+export default function UploadFiles({ uploadedFiles, success, error }: UploadFilesProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [uploadMessage, setUploadMessage] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Debug: Log when component mounts
+    React.useEffect(() => {
+        console.log('UploadFiles component mounted');
+        console.log('fileInputRef:', fileInputRef.current);
+    }, []);
+
+    // Show success/error messages
+    React.useEffect(() => {
+        if (success) {
+            setUploadMessage(success);
+            setTimeout(() => setUploadMessage(''), 5000);
+        }
+        if (error) {
+            setUploadMessage(error);
+            setTimeout(() => setUploadMessage(''), 5000);
+        }
+    }, [success, error]);
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -54,9 +75,13 @@ export default function UploadFiles({ uploadedFiles }: UploadFilesProps) {
     };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('File selected:', e.target.files);
         const files = e.target.files;
         if (files && files.length > 0) {
+            console.log('Uploading file:', files[0].name);
             uploadFile(files[0]);
+        } else {
+            console.log('No files selected');
         }
     };
 
@@ -86,12 +111,14 @@ export default function UploadFiles({ uploadedFiles }: UploadFilesProps) {
                 },
                 onError: (errors) => {
                     setUploading(false);
-                    alert('Upload failed: ' + Object.values(errors).join(', '));
+                    setUploadMessage('Upload failed: ' + Object.values(errors).join(', '));
+                    setTimeout(() => setUploadMessage(''), 5000);
                 }
             });
         } catch (error) {
             setUploading(false);
-            alert('Upload failed');
+            setUploadMessage('Upload failed');
+            setTimeout(() => setUploadMessage(''), 5000);
         }
     };
 
@@ -141,18 +168,36 @@ export default function UploadFiles({ uploadedFiles }: UploadFilesProps) {
                 title="Upload Excel Files"
                 description="Upload and process your Excel files to generate dashboards"
             >
-                <div className="flex justify-between items-center mb-6">
-                    <div></div>
-                    <Button
-                        variant="outline"
-                        onClick={refreshFiles}
-                        disabled={refreshing}
-                    >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                        {refreshing ? 'Refreshing...' : 'Refresh'}
-                    </Button>
+                                <div className="flex justify-between items-center mb-6">
+                    <Link href="/">
+                        <Button variant="outline">
+                            ← Back to Dashboard
+                        </Button>
+                    </Link>
+                    <div className="flex space-x-2">
+
+                        <Button
+                            variant="outline"
+                            onClick={refreshFiles}
+                            disabled={refreshing}
+                        >
+                            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                            {refreshing ? 'Refreshing...' : 'Refresh'}
+                        </Button>
+                    </div>
                 </div>
                 <div className="space-y-6">
+                    {/* Upload Message */}
+                    {uploadMessage && (
+                        <div className={`p-4 rounded-lg ${
+                            uploadMessage.includes('successfully')
+                                ? 'bg-green-50 text-green-800 border border-green-200'
+                                : 'bg-red-50 text-red-800 border border-red-200'
+                        }`}>
+                            {uploadMessage}
+                        </div>
+                    )}
+
                     {/* Upload Area */}
                     <Card>
                         <CardHeader>
@@ -175,21 +220,47 @@ export default function UploadFiles({ uploadedFiles }: UploadFilesProps) {
                                     {uploading ? 'Uploading...' : 'Drop files here'}
                                 </p>
                                 <p className="text-gray-500 mb-4">Supports .xlsx, .xls, .csv files up to 10MB</p>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={uploading}
-                                >
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    {uploading ? 'Uploading...' : 'Choose Files'}
-                                </Button>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept=".xlsx,.xls,.csv"
-                                    onChange={handleFileSelect}
-                                    className="hidden"
-                                />
+                                                                                                <div className="space-y-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            console.log('Choose Files button clicked');
+                                            console.log('fileInputRef:', fileInputRef.current);
+                                            if (fileInputRef.current) {
+                                                fileInputRef.current.click();
+                                            } else {
+                                                console.error('File input ref is null');
+                                            }
+                                        }}
+                                        disabled={uploading}
+                                    >
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        {uploading ? 'Uploading...' : 'Choose Files'}
+                                    </Button>
+
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".xlsx,.xls,.csv"
+                                        onChange={handleFileSelect}
+                                        className="hidden"
+                                    />
+
+
+
+                                    {/* Alternative method */}
+                                    <div className="mt-2">
+                                        <label className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 underline">
+                                            Or click here to browse files
+                                            <input
+                                                type="file"
+                                                accept=".xlsx,.xls,.csv"
+                                                onChange={handleFileSelect}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

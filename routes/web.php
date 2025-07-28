@@ -11,6 +11,10 @@ Route::get('/', [DashboardController::class, 'index']);
 Route::get('/upload-files', [UploadFilesController::class, 'index']);
 Route::post('/upload-files', [UploadFilesController::class, 'store']);
 Route::delete('/upload-files/{id}', [UploadFilesController::class, 'destroy']);
+Route::get('/test-upload', function() {
+    $files = \App\Models\UploadedFile::all();
+    return response()->json($files);
+});
 Route::get('/connected-files', [ConnectedFilesController::class, 'index']);
 Route::get('/data-sources', [DataSourcesController::class, 'index']);
 Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);

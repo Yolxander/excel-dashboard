@@ -49,6 +49,15 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ stats, recentOrders, connectedFile }: DashboardProps) {
+    const [showDataNotification, setShowDataNotification] = React.useState(false);
+
+    React.useEffect(() => {
+        if (connectedFile) {
+            setShowDataNotification(true);
+            setTimeout(() => setShowDataNotification(false), 5000);
+        }
+    }, [connectedFile]);
+
     const kpiCards = [
         {
             title: 'Total Sales',
@@ -267,6 +276,31 @@ export default function Dashboard({ stats, recentOrders, connectedFile }: Dashbo
                 title="Data Overview"
                 description="Welcome to your Excel Dashboard. Here's an overview of your data analytics."
             >
+                {showDataNotification && (
+                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <div className="flex-shrink-0">
+                                    <CheckCircle className="h-5 w-5 text-green-400" />
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm font-medium text-green-800">
+                                        Dashboard updated with data from {connectedFile}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowDataNotification(false)}
+                                className="text-green-400 hover:text-green-600"
+                            >
+                                <XCircle className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+
+
                 {renderOverview()}
             </DashboardLayout>
         </>
