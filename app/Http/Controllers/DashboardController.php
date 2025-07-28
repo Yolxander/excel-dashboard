@@ -36,28 +36,18 @@ class DashboardController extends Controller
 
             Log::info('Generated dynamic data for dashboard from connected file');
         } else {
-            Log::info('No connected files found, using default data');
-            // Fallback to mock data if no files are connected
+            Log::info('No connected files found, showing welcome state');
+            // When no file is connected, pass empty data to show welcome state
             $stats = [
-                'totalSales' => 456789,
-                'activeRecruiters' => 24,
-                'targetAchievement' => 87,
-                'avgCommission' => 1250,
+                'totalSales' => 0,
+                'activeRecruiters' => 0,
+                'targetAchievement' => 0,
+                'avgCommission' => 0,
             ];
 
             $chartData = [
-                'barChart' => [
-                    ['name' => 'North', 'value' => 400],
-                    ['name' => 'South', 'value' => 300],
-                    ['name' => 'East', 'value' => 300],
-                    ['name' => 'West', 'value' => 200],
-                ],
-                'pieChart' => [
-                    ['name' => 'North', 'value' => 35],
-                    ['name' => 'South', 'value' => 25],
-                    ['name' => 'East', 'value' => 25],
-                    ['name' => 'West', 'value' => 15],
-                ]
+                'barChart' => [],
+                'pieChart' => []
             ];
 
             $tableData = [];

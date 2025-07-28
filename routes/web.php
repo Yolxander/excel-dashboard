@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UploadFilesController;
 use App\Http\Controllers\ConnectedFilesController;
+use App\Http\Controllers\CombineFilesController;
 use App\Http\Controllers\DataSourcesController;
 use App\Http\Controllers\SyncScheduleController;
 
@@ -18,5 +19,7 @@ Route::get('/test-upload', function() {
 Route::get('/connected-files', [ConnectedFilesController::class, 'index']);
 Route::post('/connected-files/{fileId}/connect', [ConnectedFilesController::class, 'connectFile']);
 Route::post('/connected-files/{fileId}/disconnect', [ConnectedFilesController::class, 'disconnectFile']);
+Route::get('/combine-files', [CombineFilesController::class, 'index']);
+Route::post('/combine-files', [CombineFilesController::class, 'combineFiles']);
 Route::get('/data-sources', [DataSourcesController::class, 'index']);
 Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);

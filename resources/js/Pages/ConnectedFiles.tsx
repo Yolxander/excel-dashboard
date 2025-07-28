@@ -185,7 +185,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
             >
                 {/* Toast Notification */}
                 {toastMessage && (
-                    <div className={`mb-6 p-4 rounded-lg border ${
+                    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border shadow-lg max-w-sm ${
                         toastMessage.type === 'success'
                             ? 'bg-green-50 border-green-200 text-green-800'
                             : 'bg-red-50 border-red-200 text-red-800'
@@ -201,12 +201,12 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                             </div>
                             <button
                                 onClick={() => setToastMessage(null)}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-400 hover:text-gray-600 ml-3"
                             >
                                 <XCircle className="h-4 w-4" />
                             </button>
                         </div>
-                </div>
+                    </div>
                 )}
 
                     <div className="space-y-6">

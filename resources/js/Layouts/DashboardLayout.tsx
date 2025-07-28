@@ -5,16 +5,15 @@ import {
     Upload,
     FileText,
     Database,
-    Clock
+    Clock,
+    Link as LinkIcon
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
-    title: string;
-    description?: string;
 }
 
-export default function DashboardLayout({ children, title, description }: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const { url } = usePage();
 
     const sidebarItems = [
@@ -29,8 +28,9 @@ export default function DashboardLayout({ children, title, description }: Dashbo
             items: [
                 { id: 'upload', label: 'Upload Excel Files', icon: Upload, href: '/upload-files' },
                 { id: 'connected', label: 'Connected Files', icon: FileText, href: '/connected-files' },
-                { id: 'sources', label: 'Data Sources', icon: Database, href: '/data-sources' },
-                { id: 'schedule', label: 'Sync Schedule', icon: Clock, href: '/sync-schedule' }
+                { id: 'combine', label: 'Combine Files', icon: LinkIcon, href: '/combine-files' },
+                // { id: 'sources', label: 'Data Sources', icon: Database, href: '/data-sources' },
+                // { id: 'schedule', label: 'Sync Schedule', icon: Clock, href: '/sync-schedule' }
             ]
         }
     ];
@@ -81,10 +81,7 @@ export default function DashboardLayout({ children, title, description }: Dashbo
                 <header className="bg-white shadow-sm border-b">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="py-6">
-                            <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-                            {description && (
-                                <p className="text-gray-600">{description}</p>
-                            )}
+                            {/* Header content will be handled by individual pages */}
                         </div>
                     </div>
                 </header>
