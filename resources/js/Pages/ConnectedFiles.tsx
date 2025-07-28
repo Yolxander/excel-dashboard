@@ -222,6 +222,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
             <DashboardLayout
                 title="File Management"
                 description="Upload, connect, and analyze your Excel files with AI insights"
+                showEditButton={true}
             >
                 {/* Toast Notification */}
                 {toastMessage && (

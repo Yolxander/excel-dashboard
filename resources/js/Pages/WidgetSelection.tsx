@@ -306,16 +306,13 @@ export default function WidgetSelection({
     return (
         <>
             <Head title="Widget Selection" />
-            <DashboardLayout>
+            <DashboardLayout
+                title="Widget Selection"
+                description="Customize and manage your dashboard widgets"
+            >
                 <div className="space-y-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Widget Selection</h1>
-                            <p className="text-gray-600 mt-2">
-                                Choose which widgets to display on your dashboard
-                            </p>
-                        </div>
+                    {/* Back to Dashboard Button */}
+                    <div className="flex justify-end">
                         <Link href="/dashboard">
                             <Button variant="outline">
                                 <ArrowLeft className="h-4 w-4 mr-2" />

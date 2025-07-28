@@ -12,7 +12,8 @@ import {
     BrainCircuit,
     Database as DatabaseIcon,
     Sparkles,
-    LogOut
+    LogOut,
+    Edit
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -24,9 +25,10 @@ interface DashboardLayoutProps {
     onUpdateWidgets?: (dataType: 'ai' | 'raw') => void;
     isUpdating?: boolean;
     currentDataType?: 'ai' | 'raw';
+    showEditButton?: boolean;
 }
 
-export default function DashboardLayout({ children, title = 'Dashboard', description = 'Manage your data and insights', showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw' }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, title = 'Dashboard', description = 'Manage your data and insights', showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw', showEditButton = false }: DashboardLayoutProps) {
     const { url } = usePage();
     const { post } = useForm();
 
@@ -106,7 +108,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                                 <p className="text-sm text-gray-600">{description}</p>
                             </div>
 
-                                                        {/* Right side - Data Source Switch and Logout */}
+                            {/* Right side - Data Source Switch, Edit Button, and Logout */}
                             <div className="flex items-center space-x-3">
                                 {showUpdateButton && onUpdateWidgets && (
                                     <div className="flex items-center bg-gray-100 rounded-lg p-1">
@@ -144,6 +146,17 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                                             AI Insights
                                         </button>
                                     </div>
+                                )}
+
+                                {/* Edit Button */}
+                                {showEditButton && (
+                                    <Link
+                                        href="/widget-selection"
+                                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 hover:shadow-lg rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 border-0"
+                                    >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                    </Link>
                                 )}
 
                                 {/* Logout Button */}

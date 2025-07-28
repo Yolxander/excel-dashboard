@@ -752,6 +752,7 @@ export default function Dashboard({
                 onUpdateWidgets={handleUpdateWidgets}
                 isUpdating={isUpdating}
                 currentDataType={currentDataType}
+                showEditButton={!!connectedFile}
             >
                 {(showDataNotification || toastMessage) && (
                     <div className="fixed bottom-4 right-4 z-50 p-4 border rounded-lg shadow-lg max-w-sm">
