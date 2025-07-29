@@ -9,6 +9,7 @@ use App\Models\FileWidgetConnection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Services\AIService;
+use App\Services\OnboardingService;
 
 class ConnectedFilesController extends Controller
 {
@@ -25,9 +26,15 @@ class ConnectedFilesController extends Controller
             ->orderBy('display_order')
             ->get();
 
+        // Check onboarding progress
+        $user = Auth::user();
+        OnboardingService::checkAndMarkSteps($user);
+        $onboardingData = OnboardingService::getOnboardingData($user);
+
         return Inertia::render('ConnectedFiles', [
             'uploadedFiles' => $uploadedFiles,
             'dashboardWidgets' => $displayedWidgets,
+            'onboardingData' => $onboardingData,
         ]);
     }
 
@@ -51,6 +58,10 @@ class ConnectedFilesController extends Controller
         // Set all widgets for this file as displayed
         FileWidgetConnection::where('uploaded_file_id', $fileId)
             ->update(['is_displayed' => true]);
+
+        // Check onboarding progress after connecting file
+        $user = Auth::user();
+        OnboardingService::checkAndMarkSteps($user);
 
         Log::info('File connected to dashboard: ' . $file->original_filename);
 

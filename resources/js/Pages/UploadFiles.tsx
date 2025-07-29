@@ -39,9 +39,10 @@ interface UploadFilesProps {
     uploadedFiles: UploadedFile[];
     success?: string;
     error?: string;
+    onboardingData?: any;
 }
 
-export default function UploadFiles({ uploadedFiles, success, error }: UploadFilesProps) {
+export default function UploadFiles({ uploadedFiles, success, error, onboardingData }: UploadFilesProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -253,6 +254,7 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
             <DashboardLayout
                 title="Upload Excel Files"
                 description="Upload and process your Excel files to generate dashboards"
+                onboardingData={onboardingData}
             >
                                 <div className="flex justify-between items-center mb-6">
                     <Link href="/">

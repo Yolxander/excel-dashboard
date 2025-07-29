@@ -9,6 +9,7 @@ use App\Models\FileWidgetConnection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Services\AIService;
+use App\Services\OnboardingService;
 
 class DashboardController extends Controller
 {
@@ -74,6 +75,13 @@ class DashboardController extends Controller
             $connectedFile = null;
         }
 
+        // Check onboarding progress
+        $user = Auth::user();
+        OnboardingService::checkAndMarkSteps($user);
+
+        // Get onboarding data
+        $onboardingData = OnboardingService::getOnboardingData($user);
+
         $props = [
             'stats' => $stats,
             'connectedFile' => $connectedFile,
@@ -86,6 +94,7 @@ class DashboardController extends Controller
                 ? $displayedWidgets->first()->uploadedFile->processed_data['headers'] ?? []
                 : [],
             'displayedWidgets' => $displayedWidgets,
+            'onboardingData' => $onboardingData,
         ];
 
         Log::info('Rendering dashboard with connected file: ' . ($connectedFile ?? 'none'));

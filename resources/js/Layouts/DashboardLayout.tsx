@@ -16,6 +16,7 @@ import {
     Edit
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
+import OnboardingChecklist from '@/components/ui/onboarding-checklist';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -26,9 +27,10 @@ interface DashboardLayoutProps {
     isUpdating?: boolean;
     currentDataType?: 'ai' | 'raw';
     showEditButton?: boolean;
+    onboardingData?: any;
 }
 
-export default function DashboardLayout({ children, title = 'Dashboard', description = 'Manage your data and insights', showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw', showEditButton = false }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, title = 'Dashboard', description = 'Manage your data and insights', showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw', showEditButton = false, onboardingData }: DashboardLayoutProps) {
     const { url } = usePage();
     const { post } = useForm();
 
@@ -177,6 +179,10 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                     {children}
                 </main>
             </div>
+
+            {/* Onboarding Checklist */}
+            <OnboardingChecklist initialData={onboardingData} />
+
             <Toaster />
         </div>
     );

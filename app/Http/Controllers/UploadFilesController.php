@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use App\Services\OnboardingService;
 
 class UploadFilesController extends Controller
 {
@@ -19,10 +20,16 @@ class UploadFilesController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Check onboarding progress
+        $user = Auth::user();
+        OnboardingService::checkAndMarkSteps($user);
+        $onboardingData = OnboardingService::getOnboardingData($user);
+
         return Inertia::render('UploadFiles', [
             'uploadedFiles' => $uploadedFiles,
             'success' => session('success'),
             'error' => session('error'),
+            'onboardingData' => $onboardingData,
         ]);
     }
 
@@ -51,6 +58,10 @@ class UploadFilesController extends Controller
 
                     // Process the file immediately
         $this->processExcelFile($uploadedFile);
+
+        // Check onboarding progress after file upload
+        $user = Auth::user();
+        OnboardingService::checkAndMarkSteps($user);
 
         // Return a redirect to refresh the page with the new data
         return redirect()->back()->with('success', 'File uploaded and processed successfully!');

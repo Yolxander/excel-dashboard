@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use App\Services\OnboardingService;
 
 class CombineFilesController extends Controller
 {
@@ -29,9 +30,15 @@ class CombineFilesController extends Controller
             ->orderBy('display_order')
             ->get();
 
+        // Check onboarding progress
+        $user = Auth::user();
+        OnboardingService::checkAndMarkSteps($user);
+        $onboardingData = OnboardingService::getOnboardingData($user);
+
         return Inertia::render('CombineFiles', [
             'uploadedFiles' => $uploadedFiles,
             'connectedWidgets' => $connectedWidgets,
+            'onboardingData' => $onboardingData,
         ]);
     }
 

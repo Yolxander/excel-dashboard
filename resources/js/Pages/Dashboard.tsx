@@ -80,6 +80,7 @@ interface DashboardProps {
     availableColumns?: string[];
     dataType?: 'ai' | 'raw';
     displayedWidgets?: FileWidgetConnection[];
+    onboardingData?: any;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
@@ -93,7 +94,8 @@ export default function Dashboard({
     tableData,
     availableColumns,
     dataType = 'raw',
-    displayedWidgets = []
+    displayedWidgets = [],
+    onboardingData
 }: DashboardProps) {
     const [showDataNotification, setShowDataNotification] = React.useState(false);
     const [activeFilters, setActiveFilters] = React.useState<Record<string, string>>({});
@@ -848,6 +850,7 @@ export default function Dashboard({
                 isUpdating={isUpdating}
                 currentDataType={currentDataType}
                 showEditButton={!!connectedFile}
+                onboardingData={onboardingData}
             >
                 {(showDataNotification || toastMessage) && (
                     <div className="fixed bottom-4 right-4 z-50 p-4 border rounded-lg shadow-lg max-w-sm">

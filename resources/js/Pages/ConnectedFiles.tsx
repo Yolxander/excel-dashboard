@@ -62,9 +62,10 @@ interface DashboardWidget {
 interface ConnectedFilesProps {
     uploadedFiles: UploadedFile[];
     dashboardWidgets: DashboardWidget[];
+    onboardingData?: any;
 }
 
-export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: ConnectedFilesProps) {
+export default function ConnectedFiles({ uploadedFiles, dashboardWidgets, onboardingData }: ConnectedFilesProps) {
     const [connectingFile, setConnectingFile] = React.useState<number | null>(null);
     const [disconnectingFile, setDisconnectingFile] = React.useState<number | null>(null);
     const [analyzingFile, setAnalyzingFile] = React.useState<number | null>(null);
@@ -289,6 +290,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                 title="File Management"
                 description="Upload, connect, and analyze your Excel files with AI insights"
                 showEditButton={true}
+                onboardingData={onboardingData}
             >
                 {/* Toast Notification */}
                 {toastMessage && (

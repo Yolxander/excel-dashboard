@@ -55,4 +55,25 @@ class User extends Authenticatable
     {
         return $this->hasMany(DashboardWidget::class);
     }
+
+    public function onboardingSteps()
+    {
+        return $this->hasMany(OnboardingStep::class, 'user_id');
+    }
+
+    /**
+     * Check if user has completed onboarding
+     */
+    public function isOnboarded()
+    {
+        return OnboardingStep::isUserOnboarded($this->id);
+    }
+
+    /**
+     * Get onboarding progress
+     */
+    public function getOnboardingProgress()
+    {
+        return OnboardingStep::getOnboardingProgress($this->id);
+    }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\CombineFilesController;
 use App\Http\Controllers\DataSourcesController;
 use App\Http\Controllers\SyncScheduleController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OnboardingController;
 
 // Protected Routes (require authentication)
 Route::middleware(['auth'])->group(function () {
@@ -48,6 +49,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard Update Routes
     Route::post('/dashboard/update-raw-data/current', [DashboardController::class, 'updateWithRawData']);
+
+    // Onboarding Routes
+    Route::get('/onboarding/data', [OnboardingController::class, 'getOnboardingData']);
+    Route::post('/onboarding/mark-step', [OnboardingController::class, 'markStepCompleted']);
+    Route::post('/onboarding/check-progress', [OnboardingController::class, 'checkProgress']);
 });
 
 Route::get('/widget-selection', [App\Http\Controllers\WidgetSelectionController::class, 'index'])->name('widget-selection');

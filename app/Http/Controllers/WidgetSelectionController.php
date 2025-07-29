@@ -8,6 +8,7 @@ use App\Models\UploadedFile;
 use App\Models\FileWidgetConnection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Services\OnboardingService;
 
 class WidgetSelectionController extends Controller
 {
@@ -46,11 +47,17 @@ class WidgetSelectionController extends Controller
                 ->get();
         }
 
+        // Check onboarding progress
+        $user = Auth::user();
+        OnboardingService::checkAndMarkSteps($user);
+        $onboardingData = OnboardingService::getOnboardingData($user);
+
         return Inertia::render('WidgetSelection', [
             'uploadedFiles' => $uploadedFiles,
             'currentFile' => $currentFile,
             'availableWidgets' => $availableWidgets,
             'displayedWidgets' => $displayedWidgets,
+            'onboardingData' => $onboardingData,
         ]);
     }
 
