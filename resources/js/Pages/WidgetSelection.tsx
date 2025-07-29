@@ -28,7 +28,8 @@ import {
     Save,
     RefreshCw,
     Database,
-    Link as LinkIcon
+    Link as LinkIcon,
+    Sparkles
 } from 'lucide-react';
 
 interface UploadedFile {
