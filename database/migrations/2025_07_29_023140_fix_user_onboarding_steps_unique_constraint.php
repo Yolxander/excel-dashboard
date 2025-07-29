@@ -11,10 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_onboarding_steps', function (Blueprint $table) {
-            // Drop the global unique constraint on step_key
-            $table->dropUnique(['step_key']);
-        });
+        // Check if the unique constraint exists before trying to drop it
+        $hasIndex = \DB::select("SHOW INDEX FROM user_onboarding_steps WHERE Key_name = 'user_onboarding_steps_step_key_unique'");
+
+        if (!empty($hasIndex)) {
+            Schema::table('user_onboarding_steps', function (Blueprint $table) {
+                $table->dropUnique(['step_key']);
+            });
+        }
     }
 
     /**
@@ -22,9 +26,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user_onboarding_steps', function (Blueprint $table) {
-            // Re-add the global unique constraint on step_key
-            $table->unique('step_key');
-        });
+        // Check if the unique constraint doesn't exist before trying to add it
+        $hasIndex = \DB::select("SHOW INDEX FROM user_onboarding_steps WHERE Key_name = 'user_onboarding_steps_step_key_unique'");
+
+        if (empty($hasIndex)) {
+            Schema::table('user_onboarding_steps', function (Blueprint $table) {
+                $table->unique('step_key');
+            });
+        }
     }
 };
