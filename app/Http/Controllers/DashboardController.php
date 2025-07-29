@@ -88,7 +88,7 @@ class DashboardController extends Controller
             'displayedWidgets' => $displayedWidgets,
         ];
 
-        Log::info('Rendering dashboard with props: ' . json_encode($props));
+        Log::info('Rendering dashboard with connected file: ' . ($connectedFile ?? 'none'));
 
         return Inertia::render('Dashboard', $props);
     }
