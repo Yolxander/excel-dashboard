@@ -200,6 +200,101 @@ export default function Dashboard({
         });
     };
 
+    // Apply filters to table data
+    const getFilteredTableData = () => {
+        if (!tableData || Object.keys(activeFilters).length === 0) {
+            return tableData;
+        }
+
+        return tableData.filter(row => {
+            return Object.entries(activeFilters).every(([column, filterValue]) => {
+                const rowValue = row[column];
+                return rowValue === filterValue;
+            });
+        });
+    };
+
+    // Apply filters to chart data
+    const getFilteredChartData = () => {
+        if (!chartData || Object.keys(activeFilters).length === 0) {
+            return chartData;
+        }
+
+        const filteredTableData = getFilteredTableData();
+        if (!filteredTableData || filteredTableData.length === 0) {
+            return chartData;
+        }
+
+        // Recalculate chart data based on filtered table data
+        const newChartData = { ...chartData };
+
+        // Recalculate bar chart data
+        if (chartData.barChart && chartData.barChart.length > 0) {
+            // This is a simplified recalculation - in a real app, you'd want more sophisticated logic
+            const barChartColumn = chartTitles?.barChart?.toLowerCase().includes('team') ? 'team_home' : 'home_goal';
+            const barChartData = filteredTableData.reduce((acc, row) => {
+                const key = row[barChartColumn] || 'Unknown';
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+
+            newChartData.barChart = Object.entries(barChartData).map(([name, value]) => ({
+                name,
+                value: value as number
+            }));
+        }
+
+        // Recalculate pie chart data
+        if (chartData.pieChart && chartData.pieChart.length > 0) {
+            const pieChartColumn = chartTitles?.pieChart?.toLowerCase().includes('team') ? 'team_home' : 'home_goal';
+            const pieChartData = filteredTableData.reduce((acc, row) => {
+                const key = row[pieChartColumn] || 'Unknown';
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+
+            newChartData.pieChart = Object.entries(pieChartData).map(([name, value]) => ({
+                name,
+                value: value as number
+            }));
+        }
+
+        return newChartData;
+    };
+
+    // Apply filters to stats
+    const getFilteredStats = () => {
+        if (!stats || Object.keys(activeFilters).length === 0) {
+            return stats;
+        }
+
+        const filteredTableData = getFilteredTableData();
+        if (!filteredTableData || filteredTableData.length === 0) {
+            return stats;
+        }
+
+        // Recalculate stats based on filtered data
+        const newStats = { ...stats };
+
+        // Recalculate total sales (assuming it's based on some numeric column)
+        if (filteredTableData.length > 0) {
+            const numericColumns = ['home_goal', 'away_goal', 'played'];
+            const totalSales = numericColumns.reduce((sum, col) => {
+                return sum + filteredTableData.reduce((colSum, row) => {
+                    const value = parseFloat(row[col]) || 0;
+                    return colSum + value;
+                }, 0);
+            }, 0);
+
+            newStats.totalSales = Math.round(totalSales);
+            newStats.activeRecruiters = filteredTableData.length;
+            newStats.targetAchievement = Math.round((totalSales / 1000) * 100); // Simplified calculation
+            newStats.avgCommission = totalSales > 0 ? Math.round(totalSales / filteredTableData.length) : 0;
+        }
+
+        return newStats;
+    };
+
     const visibleColumns = availableColumns && availableColumns.length > 3 && !showAllFilters
         ? availableColumns.slice(0, 3)
         : availableColumns;
@@ -520,9 +615,9 @@ export default function Dashboard({
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {widget.widget_type === 'bar_chart' && chartData && chartData.barChart && chartData.barChart.length > 0 ? (
+                                {widget.widget_type === 'bar_chart' && getFilteredChartData() && getFilteredChartData().barChart && getFilteredChartData().barChart.length > 0 ? (
                                     <ChartContainer config={barChartConfig}>
-                                        <BarChart data={chartData.barChart}>
+                                        <BarChart data={getFilteredChartData().barChart}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="name" />
                                             <YAxis />
@@ -542,11 +637,11 @@ export default function Dashboard({
                                             <Bar dataKey="value" fill="hsl(var(--chart-1))" />
                                         </BarChart>
                                     </ChartContainer>
-                                ) : widget.widget_type === 'pie_chart' && chartData && chartData.pieChart && chartData.pieChart.length > 0 ? (
+                                ) : widget.widget_type === 'pie_chart' && getFilteredChartData() && getFilteredChartData().pieChart && getFilteredChartData().pieChart.length > 0 ? (
                                     <ChartContainer config={pieChartConfig}>
                                         <RechartsPieChart>
                                             <Pie
-                                                data={chartData.pieChart}
+                                                data={getFilteredChartData().pieChart}
                                                 cx="50%"
                                                 cy="50%"
                                                 labelLine={false}
@@ -555,7 +650,7 @@ export default function Dashboard({
                                                 fill="hsl(var(--chart-1))"
                                                 dataKey="value"
                                             >
-                                                {chartData.pieChart.map((entry, index) => (
+                                                {getFilteredChartData().pieChart.map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
@@ -610,13 +705,13 @@ export default function Dashboard({
                                         onChange={(e) => handleFilterChange(column, e.target.value)}
                                     >
                                         <option value={`All ${column}`}>All {column}</option>
-                                        {tableData && tableData.length > 0 && (
+                                        {getFilteredTableData() && getFilteredTableData().length > 0 && (
                                             <>
-                                                {Array.from(new Set(tableData.map(row => row[column]))).slice(0, 10).map((value, valueIndex) => (
+                                                {Array.from(new Set(getFilteredTableData().map(row => row[column]))).slice(0, 10).map((value, valueIndex) => (
                                                     <option key={valueIndex} value={value}>{value}</option>
                                                 ))}
-                                                {Array.from(new Set(tableData.map(row => row[column]))).length > 10 && (
-                                                    <option disabled>... and {Array.from(new Set(tableData.map(row => row[column]))).length - 10} more</option>
+                                                {Array.from(new Set(getFilteredTableData().map(row => row[column]))).length > 10 && (
+                                                    <option disabled>... and {Array.from(new Set(getFilteredTableData().map(row => row[column]))).length - 10} more</option>
                                                 )}
                                             </>
                                         )}
@@ -708,17 +803,17 @@ export default function Dashboard({
                     <CardDescription>Raw data from your uploaded file</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {tableData && tableData.length > 0 ? (
+                    {getFilteredTableData() && getFilteredTableData().length > 0 ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    {Object.keys(tableData[0]).map((header) => (
+                                    {Object.keys(getFilteredTableData()[0]).map((header) => (
                                         <TableHead key={header}>{header}</TableHead>
                                     ))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {tableData.map((row, index) => (
+                                {getFilteredTableData().map((row, index) => (
                                     <TableRow key={index}>
                                         {Object.values(row).map((value, cellIndex) => (
                                             <TableCell key={cellIndex}>
