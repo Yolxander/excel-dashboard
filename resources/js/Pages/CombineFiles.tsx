@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -214,6 +214,9 @@ export default function CombineFiles({ uploadedFiles, connectedWidgets }: Combin
                 setSelectedFiles([]);
                 setPreviewData(null);
                 setShowPreview(false);
+
+                // Refresh the page to show the new combined file
+                router.reload();
             } else {
                 console.error('Combine files error:', result);
                 setToastMessage({ type: 'error', message: result.error || 'Error combining files' });

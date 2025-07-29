@@ -142,6 +142,11 @@ class UploadFilesController extends Controller
         // Delete the database record
         $file->delete();
 
-        return response()->json(['message' => 'File deleted successfully']);
+        // Check if it's an AJAX request
+        if (request()->expectsJson()) {
+            return response()->json(['message' => 'File deleted successfully']);
+        }
+
+        return redirect()->back()->with('success', 'File deleted successfully');
     }
 }

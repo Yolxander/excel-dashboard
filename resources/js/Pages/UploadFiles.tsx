@@ -149,13 +149,40 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
         const confirmed = window.confirm('Are you sure you want to delete this file? This action cannot be undone.');
         if (confirmed) {
             try {
-                await router.delete(`/upload-files/${id}`);
-                toast({
-                    title: 'File deleted',
-                    description: 'The file has been deleted successfully.',
-                    variant: 'success',
+                console.log('Deleting file with ID:', id);
+
+                const response = await fetch(`/upload-files/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
                 });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Response data:', data);
+
+                    // Show success message
+                    toast({
+                        title: 'File deleted',
+                        description: 'The file has been deleted successfully.',
+                        variant: 'success',
+                    });
+
+                    // Refresh the page to show updated file list
+                    router.reload();
+                } else {
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    throw new Error(`Failed to delete file: ${response.status} ${response.statusText}`);
+                }
             } catch (error) {
+                console.error('Delete error:', error);
                 toast({
                     title: 'Error deleting file',
                     description: 'There was an error deleting the file. Please try again.',
