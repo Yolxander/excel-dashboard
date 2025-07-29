@@ -230,6 +230,7 @@ class CombineFilesController extends Controller
 
             // Create database record
             $combinedFile = UploadedFile::create([
+                'user_id' => Auth::id(),
                 'original_filename' => $combinedFileName,
                 'filename' => $combinedFileName,
                 'file_path' => $combinedFilePath,
