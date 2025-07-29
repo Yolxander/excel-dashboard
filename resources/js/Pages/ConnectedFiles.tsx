@@ -68,11 +68,14 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
     const [connectingFile, setConnectingFile] = React.useState<number | null>(null);
     const [disconnectingFile, setDisconnectingFile] = React.useState<number | null>(null);
     const [analyzingFile, setAnalyzingFile] = React.useState<number | null>(null);
-    const [toastMessage, setToastMessage] = React.useState<{ type: 'success' | 'error', message: string } | null>(null);
+    const [toastMessage, setToastMessage] = React.useState<{ type: 'success' | 'error', message: string, showDashboardLink?: boolean } | null>(null);
     const [selectedFileForInsights, setSelectedFileForInsights] = React.useState<UploadedFile | null>(null);
     const [showInsightsModal, setShowInsightsModal] = React.useState(false);
+    const [connectedFileIds, setConnectedFileIds] = React.useState<Set<number>>(
+        new Set(dashboardWidgets.filter(w => w.is_displayed).map(w => w.uploaded_file_id))
+    );
 
-        const connectFile = async (fileId: number) => {
+            const connectFile = async (fileId: number) => {
         setConnectingFile(fileId);
         try {
             // First, connect the file
@@ -86,7 +89,10 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
 
             const connectResult = await connectResponse.json();
 
-            if (connectResult.success) {
+                        if (connectResult.success) {
+                // Update the connected files state
+                setConnectedFileIds(prev => new Set([...prev, fileId]));
+
                 // Check if the file already has AI insights
                 const file = uploadedFiles.find(f => f.id === fileId);
                 const hasInsights = file && file.ai_insights;
@@ -95,15 +101,16 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                     // File already has insights, just connect it
                     setToastMessage({
                         type: 'success',
-                        message: 'File connected successfully! AI insights are already available on the dashboard.'
+                        message: 'File connected successfully! AI insights are already available on the dashboard.',
+                        showDashboardLink: true
                     });
-                    // Redirect to dashboard to see the existing insights
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 2000);
                 } else {
                     // File doesn't have insights, generate them
-                    setToastMessage({ type: 'success', message: 'File connected successfully! Now generating AI insights...' });
+                    setToastMessage({
+                        type: 'success',
+                        message: 'File connected successfully! Now generating AI insights...',
+                        showDashboardLink: true
+                    });
 
                     // Then trigger AI analysis
                     setAnalyzingFile(fileId);
@@ -121,12 +128,9 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                         if (aiData.success) {
                             setToastMessage({
                                 type: 'success',
-                                message: 'File connected and AI analysis completed! Enhanced widgets and charts are now available on the dashboard.'
+                                message: 'File connected and AI analysis completed! Enhanced widgets and charts are now available on the dashboard.',
+                                showDashboardLink: true
                             });
-                            // Redirect to dashboard to see the AI insights
-                            setTimeout(() => {
-                                window.location.href = '/';
-                            }, 2000);
                         } else {
                             setToastMessage({
                                 type: 'error',
@@ -165,10 +169,19 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
 
             const result = await response.json();
 
-            if (result.success) {
-                setToastMessage({ type: 'success', message: result.message });
-                // Refresh the page to show updated data
-                router.reload();
+                        if (result.success) {
+                // Update the connected files state
+                setConnectedFileIds(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(fileId);
+                    return newSet;
+                });
+
+                setToastMessage({
+                    type: 'success',
+                    message: result.message,
+                    showDashboardLink: true
+                });
             } else {
                 setToastMessage({ type: 'error', message: result.error || 'Failed to disconnect file' });
             }
@@ -265,7 +278,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
     };
 
     const isFileConnected = (fileId: number) => {
-        return dashboardWidgets.some(widget => widget.uploaded_file_id === fileId && widget.is_displayed);
+        return connectedFileIds.has(fileId);
     };
 
     return (
@@ -291,7 +304,14 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                 ) : (
                                     <AlertCircle className="h-5 w-5 text-red-400 mr-3" />
                                 )}
-                                <p className="text-sm font-medium">{toastMessage.message}</p>
+                                <div>
+                                    <p className="text-sm font-medium">{toastMessage.message}</p>
+                                    {toastMessage.showDashboardLink && (
+                                        <Link href="/" className="text-xs text-blue-600 hover:text-blue-800 underline mt-1 inline-block">
+                                            See Dashboard →
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
                             <button
                                 onClick={() => setToastMessage(null)}
