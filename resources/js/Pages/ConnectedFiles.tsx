@@ -72,10 +72,11 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
     const [selectedFileForInsights, setSelectedFileForInsights] = React.useState<UploadedFile | null>(null);
     const [showInsightsModal, setShowInsightsModal] = React.useState(false);
 
-    const connectFile = async (fileId: number) => {
+        const connectFile = async (fileId: number) => {
         setConnectingFile(fileId);
         try {
-            const response = await fetch(`/connected-files/${fileId}/connect`, {
+            // First, connect the file
+            const connectResponse = await fetch(`/connected-files/${fileId}/connect`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -83,14 +84,66 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                 },
             });
 
-            const result = await response.json();
+            const connectResult = await connectResponse.json();
 
-            if (result.success) {
-                setToastMessage({ type: 'success', message: result.message });
-                // Refresh the page to show updated data
-                router.reload();
+            if (connectResult.success) {
+                // Check if the file already has AI insights
+                const file = uploadedFiles.find(f => f.id === fileId);
+                const hasInsights = file && file.ai_insights;
+
+                if (hasInsights) {
+                    // File already has insights, just connect it
+                    setToastMessage({
+                        type: 'success',
+                        message: 'File connected successfully! AI insights are already available on the dashboard.'
+                    });
+                    // Redirect to dashboard to see the existing insights
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    // File doesn't have insights, generate them
+                    setToastMessage({ type: 'success', message: 'File connected successfully! Now generating AI insights...' });
+
+                    // Then trigger AI analysis
+                    setAnalyzingFile(fileId);
+                    try {
+                        const aiResponse = await fetch(`/ai/analyze-file/${fileId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                            },
+                        });
+
+                        const aiData = await aiResponse.json();
+
+                        if (aiData.success) {
+                            setToastMessage({
+                                type: 'success',
+                                message: 'File connected and AI analysis completed! Enhanced widgets and charts are now available on the dashboard.'
+                            });
+                            // Redirect to dashboard to see the AI insights
+                            setTimeout(() => {
+                                window.location.href = '/';
+                            }, 2000);
+                        } else {
+                            setToastMessage({
+                                type: 'error',
+                                message: `File connected but AI analysis failed: ${aiData.message || 'Unknown error'}`
+                            });
+                        }
+                    } catch (aiError) {
+                        setToastMessage({
+                            type: 'error',
+                            message: 'File connected but AI analysis failed due to network error'
+                        });
+                    } finally {
+                        setAnalyzingFile(null);
+                    }
+                }
             } else {
-                setToastMessage({ type: 'error', message: result.error || 'Failed to connect file' });
+                setToastMessage({ type: 'error', message: connectResult.error || 'Failed to connect file' });
             }
         } catch (error) {
             setToastMessage({ type: 'error', message: 'Failed to connect file' });
@@ -325,15 +378,17 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets }: Conn
                                                                     variant="default"
                                                                     size="sm"
                                                                     onClick={() => connectFile(file.id)}
-                                                                    disabled={connectingFile === file.id}
+                                                                    disabled={connectingFile === file.id || analyzingFile === file.id}
                                                                     className="flex-1"
                                                                 >
                                                                     {connectingFile === file.id ? (
                                                                         <Clock className="h-4 w-4 mr-2 animate-spin" />
+                                                                    ) : analyzingFile === file.id ? (
+                                                                        <Sparkles className="h-4 w-4 mr-2 animate-spin" />
                                                                     ) : (
                                                                         <LinkIcon className="h-4 w-4 mr-2" />
                                                                     )}
-                                                                    Connect
+                                                                    {connectingFile === file.id ? 'Connecting...' : analyzingFile === file.id ? 'Analyzing...' : file.ai_insights ? 'Connect' : 'Connect & Analyze'}
                                             </Button>
                                                             )}
                                                         </>
