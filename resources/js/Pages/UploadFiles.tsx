@@ -6,6 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Upload, FileText, Plus, MoreHorizontal, Trash2, Download, Eye, RefreshCw } from 'lucide-react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface UploadedFile {
     id: number;
@@ -35,6 +46,8 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
     const [uploading, setUploading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [uploadMessage, setUploadMessage] = useState('');
+    const [fileToDelete, setFileToDelete] = useState<number | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Debug: Log when component mounts
@@ -145,50 +158,57 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
         }
     };
 
-    const deleteFile = async (id: number) => {
-        const confirmed = window.confirm('Are you sure you want to delete this file? This action cannot be undone.');
-        if (confirmed) {
-            try {
-                console.log('Deleting file with ID:', id);
+        const handleDeleteClick = (id: number) => {
+        setFileToDelete(id);
+        setIsDeleteDialogOpen(true);
+    };
 
-                const response = await fetch(`/upload-files/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                    },
-                });
+    const deleteFile = async () => {
+        if (!fileToDelete) return;
 
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
+        try {
+            console.log('Deleting file with ID:', fileToDelete);
 
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Response data:', data);
+            const response = await fetch(`/upload-files/${fileToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            });
 
-                    // Show success message
-                    toast({
-                        title: 'File deleted',
-                        description: 'The file has been deleted successfully.',
-                        variant: 'success',
-                    });
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
 
-                    // Refresh the page to show updated file list
-                    router.reload();
-                } else {
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
-                    throw new Error(`Failed to delete file: ${response.status} ${response.statusText}`);
-                }
-            } catch (error) {
-                console.error('Delete error:', error);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                // Show success message
                 toast({
-                    title: 'Error deleting file',
-                    description: 'There was an error deleting the file. Please try again.',
-                    variant: 'destructive',
+                    title: 'File deleted',
+                    description: 'The file has been deleted successfully.',
+                    variant: 'success',
                 });
+
+                // Refresh the page to show updated file list
+                router.reload();
+            } else {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                throw new Error(`Failed to delete file: ${response.status} ${response.statusText}`);
             }
+        } catch (error) {
+            console.error('Delete error:', error);
+            toast({
+                title: 'Error deleting file',
+                description: 'There was an error deleting the file. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setFileToDelete(null);
         }
     };
 
@@ -368,7 +388,7 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => deleteFile(file.id)}
+                                                    onClick={() => handleDeleteClick(file.id)}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -406,6 +426,24 @@ export default function UploadFiles({ uploadedFiles, success, error }: UploadFil
                     )}
                 </div>
             </DashboardLayout>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete File</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this file? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={deleteFile} className="bg-red-600 hover:bg-red-700">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
