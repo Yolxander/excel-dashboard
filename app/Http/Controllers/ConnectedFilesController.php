@@ -26,9 +26,8 @@ class ConnectedFilesController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        // Check onboarding progress
+        // Get onboarding data
         $user = Auth::user();
-        OnboardingService::checkAndMarkSteps($user);
         $onboardingData = OnboardingService::getOnboardingData($user);
 
         return Inertia::render('ConnectedFiles', [
@@ -62,6 +61,9 @@ class ConnectedFilesController extends Controller
         // Check onboarding progress after connecting file
         $user = Auth::user();
         OnboardingService::checkAndMarkSteps($user);
+
+        // Specifically mark the connect step as completed
+        OnboardingService::markStepCompleted($user, 'connect_file_to_dashboard');
 
         Log::info('File connected to dashboard: ' . $file->original_filename);
 

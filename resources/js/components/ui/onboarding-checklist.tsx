@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Circle, X, ChevronDown, ChevronUp, Trophy, Sparkles } from 'lucide-react';
+import { CheckCircle, Circle, X, ChevronDown, ChevronUp, Trophy, Sparkles, PartyPopper } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface OnboardingStep {
@@ -33,16 +33,54 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
     const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(initialData || null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isLoading, setIsLoading] = useState(!initialData);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const [previousProgress, setPreviousProgress] = useState(0);
     const { toast } = useToast();
 
     console.log('OnboardingChecklist props:', { initialData, className });
-    console.log('OnboardingChecklist state:', { onboardingData, isExpanded, isLoading });
+    console.log('OnboardingChecklist state:', { onboardingData, isExpanded, isLoading, showCelebration });
 
     useEffect(() => {
         if (!initialData) {
             fetchOnboardingData();
         }
     }, [initialData]);
+
+    // Real-time progress checking
+    useEffect(() => {
+        // Check progress every 3 seconds if onboarding is not completed
+        if (onboardingData && !onboardingData.is_completed) {
+            const interval = setInterval(() => {
+                checkProgress();
+            }, 3000);
+
+            return () => clearInterval(interval);
+        }
+    }, [onboardingData]);
+
+    // Check for completion and show celebration
+    useEffect(() => {
+        if (onboardingData && onboardingData.progress) {
+            const currentProgress = onboardingData.progress.progress_percentage;
+
+            // Check if user just completed all steps
+            if (currentProgress === 100 && previousProgress < 100) {
+                setShowCelebration(true);
+                toast({
+                    title: "🎉 Congratulations!",
+                    description: "You've completed the onboarding process!",
+                    variant: "default",
+                });
+
+                // Hide celebration after 5 seconds
+                setTimeout(() => {
+                    setShowCelebration(false);
+                }, 5000);
+            }
+
+            setPreviousProgress(currentProgress);
+        }
+    }, [onboardingData, previousProgress, toast]);
 
     const fetchOnboardingData = async () => {
         try {
@@ -100,7 +138,29 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
 
             if (response.ok) {
                 const data = await response.json();
-                setOnboardingData(data.onboarding_data);
+                const newData = data.onboarding_data;
+
+                // Check if any new steps were completed
+                if (onboardingData && newData.progress) {
+                    const oldCompletedSteps = onboardingData.progress.steps.filter(step => step.is_completed);
+                    const newCompletedSteps = newData.progress.steps.filter(step => step.is_completed);
+
+                    // Find newly completed steps
+                    const newlyCompleted = newCompletedSteps.filter(newStep =>
+                        !oldCompletedSteps.some(oldStep => oldStep.id === newStep.id)
+                    );
+
+                    // Show toast for newly completed steps
+                    newlyCompleted.forEach(step => {
+                        toast({
+                            title: "🎉 Step Completed!",
+                            description: `Great job! You've completed: ${step.step_name}`,
+                            className: "border-green-200 bg-green-50 text-green-800",
+                        });
+                    });
+                }
+
+                setOnboardingData(newData);
             }
         } catch (error) {
             console.error('Failed to check progress:', error);
@@ -125,6 +185,19 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
 
     return (
         <div className={`fixed bottom-4 left-64 z-50 max-w-sm ${className}`} style={{ marginLeft: '1rem' }}>
+            {/* Celebration Animation */}
+            {showCelebration && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200 animate-pulse">
+                    <div className="text-center">
+                        <div className="flex justify-center mb-2">
+                            <PartyPopper className="h-8 w-8 text-green-600 animate-bounce" />
+                        </div>
+                        <h3 className="text-lg font-bold text-green-800 mb-1">🎉 Congratulations!</h3>
+                        <p className="text-sm text-green-600">You've completed the onboarding!</p>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-white shadow-lg border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50">
                 <div className="p-4">
                     <div className="flex items-center justify-between">

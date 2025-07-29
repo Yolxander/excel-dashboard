@@ -20,9 +20,8 @@ class UploadFilesController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Check onboarding progress
+        // Get onboarding data
         $user = Auth::user();
-        OnboardingService::checkAndMarkSteps($user);
         $onboardingData = OnboardingService::getOnboardingData($user);
 
         return Inertia::render('UploadFiles', [

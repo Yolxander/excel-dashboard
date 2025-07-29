@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \Inertia\Middleware::class,
+            \App\Http\Middleware\CheckOnboardingProgress::class,
         ]);
 
         $middleware->alias([

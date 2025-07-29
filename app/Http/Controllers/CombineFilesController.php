@@ -30,9 +30,8 @@ class CombineFilesController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        // Check onboarding progress
+        // Get onboarding data
         $user = Auth::user();
-        OnboardingService::checkAndMarkSteps($user);
         $onboardingData = OnboardingService::getOnboardingData($user);
 
         return Inertia::render('CombineFiles', [
@@ -256,6 +255,10 @@ class CombineFilesController extends Controller
 
             // Create widgets for the combined file
             $this->createWidgetsForCombinedFile($combinedFile, $request->aiInsights);
+
+            // Mark combine_files step as completed
+            $user = Auth::user();
+            OnboardingService::markStepCompleted($user, 'combine_files');
 
             return response()->json([
                 'success' => true,

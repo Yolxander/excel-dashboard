@@ -75,11 +75,8 @@ class DashboardController extends Controller
             $connectedFile = null;
         }
 
-        // Check onboarding progress
-        $user = Auth::user();
-        OnboardingService::checkAndMarkSteps($user);
-
         // Get onboarding data
+        $user = Auth::user();
         $onboardingData = OnboardingService::getOnboardingData($user);
 
         $props = [

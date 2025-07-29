@@ -56,6 +56,11 @@ class User extends Authenticatable
         return $this->hasMany(DashboardWidget::class);
     }
 
+    public function fileWidgetConnections()
+    {
+        return $this->hasManyThrough(FileWidgetConnection::class, UploadedFile::class);
+    }
+
     public function onboardingSteps()
     {
         return $this->hasMany(OnboardingStep::class, 'user_id');

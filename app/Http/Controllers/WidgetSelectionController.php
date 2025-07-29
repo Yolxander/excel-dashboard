@@ -47,9 +47,8 @@ class WidgetSelectionController extends Controller
                 ->get();
         }
 
-        // Check onboarding progress
+        // Get onboarding data
         $user = Auth::user();
-        OnboardingService::checkAndMarkSteps($user);
         $onboardingData = OnboardingService::getOnboardingData($user);
 
         return Inertia::render('WidgetSelection', [
@@ -124,7 +123,9 @@ class WidgetSelectionController extends Controller
             ->orderBy('display_order')
             ->get();
 
-
+        // Mark edit_file_widgets step as completed
+        $user = Auth::user();
+        OnboardingService::markStepCompleted($user, 'edit_file_widgets');
 
         return response()->json([
             'success' => true,
@@ -243,6 +244,10 @@ class WidgetSelectionController extends Controller
                 'widget_type' => $widgetConnection->widget_type
             ]);
 
+            // Mark edit_file_widgets step as completed
+            $user = Auth::user();
+            OnboardingService::markStepCompleted($user, 'edit_file_widgets');
+
             return response()->json([
                 'success' => true,
                 'widget_name' => $widgetName,
@@ -315,6 +320,10 @@ class WidgetSelectionController extends Controller
                 'widget_name' => $widgetName,
                 'widget_type' => $widgetConnection->widget_type
             ]);
+
+            // Mark edit_file_widgets step as completed
+            $user = Auth::user();
+            OnboardingService::markStepCompleted($user, 'edit_file_widgets');
 
             return response()->json([
                 'success' => true,

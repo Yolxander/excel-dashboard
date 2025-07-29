@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\OnboardingStep;
+use App\Models\FileWidgetConnection;
 use Illuminate\Support\Facades\Log;
 
 class OnboardingService
@@ -69,13 +70,19 @@ class OnboardingService
             ->where('step_key', $stepKey)
             ->first();
 
-        if ($step && !$step->is_completed) {
-            $step->markAsCompleted();
-            Log::info("Onboarding step '{$stepKey}' completed for user {$user->id}");
-            return true;
+        if (!$step) {
+            Log::warning("Onboarding step '{$stepKey}' not found for user {$user->id}");
+            return false;
         }
 
-        return false;
+        if ($step->is_completed) {
+            Log::info("Onboarding step '{$stepKey}' already completed for user {$user->id}");
+            return false;
+        }
+
+        $step->markAsCompleted();
+        Log::info("Onboarding step '{$stepKey}' completed for user {$user->id}");
+        return true;
     }
 
     /**
@@ -103,12 +110,17 @@ class OnboardingService
     public static function getOnboardingData(User $user)
     {
         $progress = $user->getOnboardingProgress();
+        $shouldShow = self::shouldShowOnboarding($user);
+        $isCompleted = $user->isOnboarded();
 
-        return [
-            'should_show' => self::shouldShowOnboarding($user),
+        $data = [
+            'should_show' => $shouldShow,
             'progress' => $progress,
-            'is_completed' => $user->isOnboarded(),
+            'is_completed' => $isCompleted,
         ];
+
+        Log::info("Onboarding data for user {$user->id}: " . json_encode($data));
+        return $data;
     }
 
     /**
@@ -116,30 +128,48 @@ class OnboardingService
      */
     public static function checkAndMarkSteps(User $user)
     {
+        Log::info("Checking onboarding steps for user {$user->id}");
+
         // Check for upload_first_file
-        if ($user->uploadedFiles()->count() > 0) {
-            self::markStepCompleted($user, 'upload_first_file');
+        $uploadedFilesCount = $user->uploadedFiles()->count();
+        Log::info("User {$user->id} has {$uploadedFilesCount} uploaded files");
+        if ($uploadedFilesCount > 0) {
+            $result = self::markStepCompleted($user, 'upload_first_file');
+            Log::info("Marking upload_first_file as completed: " . ($result ? 'success' : 'failed'));
         }
 
-        // Check for connect_file_to_dashboard
-        if ($user->dashboardWidgets()->count() > 0) {
-            self::markStepCompleted($user, 'connect_file_to_dashboard');
+        // Check for connect_file_to_dashboard - mark as completed if user has any file widget connections
+        $fileWidgetConnections = FileWidgetConnection::whereHas('uploadedFile', function($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->count();
+        Log::info("User {$user->id} has {$fileWidgetConnections} file widget connections");
+        if ($fileWidgetConnections > 0) {
+            $result = self::markStepCompleted($user, 'connect_file_to_dashboard');
+            Log::info("Marking connect_file_to_dashboard as completed: " . ($result ? 'success' : 'failed'));
         }
 
-        // Check for edit_file_widgets (if user has widgets and has accessed widget selection)
-        if ($user->dashboardWidgets()->count() > 0) {
-            self::markStepCompleted($user, 'edit_file_widgets');
+        // Check for edit_file_widgets - mark as completed if user has any file widget connections
+        // This indicates they've interacted with the widget system
+        if ($fileWidgetConnections > 0) {
+            $result = self::markStepCompleted($user, 'edit_file_widgets');
+            Log::info("Marking edit_file_widgets as completed: " . ($result ? 'success' : 'failed'));
         }
 
         // Check for update_second_file
-        if ($user->uploadedFiles()->count() > 1) {
-            self::markStepCompleted($user, 'update_second_file');
+        if ($uploadedFilesCount > 1) {
+            $result = self::markStepCompleted($user, 'update_second_file');
+            Log::info("Marking update_second_file as completed: " . ($result ? 'success' : 'failed'));
         }
 
-        // Check for combine_files (this would need to be checked based on combine files functionality)
-        // For now, we'll mark it as completed if user has multiple files
-        if ($user->uploadedFiles()->count() > 1) {
-            self::markStepCompleted($user, 'combine_files');
+        // Check for combine_files - mark as completed if user has multiple files
+        // In a real implementation, you might want to track actual file combination actions
+        if ($uploadedFilesCount > 1) {
+            $result = self::markStepCompleted($user, 'combine_files');
+            Log::info("Marking combine_files as completed: " . ($result ? 'success' : 'failed'));
         }
+
+        // Log current progress
+        $progress = self::getOnboardingData($user);
+        Log::info("Current onboarding progress for user {$user->id}: " . json_encode($progress));
     }
 }
