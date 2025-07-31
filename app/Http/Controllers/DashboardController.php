@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Services\AIService;
 use App\Services\OnboardingService;
+use App\Services\RawDataService;
 
 class DashboardController extends Controller
 {
@@ -37,7 +38,6 @@ class DashboardController extends Controller
         if ($displayedWidgets->isNotEmpty()) {
             $file = $displayedWidgets->first()->uploadedFile;
             $data = $file->processed_data;
-            Log::info('Using data from connected file: ' . $file->original_filename);
 
             // Use existing AI insights from the file if available, don't trigger new analysis
             $aiInsights = $file->ai_insights;
@@ -45,19 +45,14 @@ class DashboardController extends Controller
             if ($aiInsights && isset($aiInsights['widget_insights'])) {
                 $stats = $this->generateStatsFromAIInsights($aiInsights['widget_insights']);
                 $chartData = $this->generateChartDataFromAIInsights($aiInsights);
-                Log::info('Using existing AI-enhanced stats and charts for dashboard');
             } else {
                 $stats = $this->generateStatsFromData($data);
                 $chartData = $this->generateChartDataFromData($data);
-                Log::info('Using standard stats and charts for dashboard');
             }
 
             $tableData = $this->generateTableDataFromData($data);
             $connectedFile = $file->original_filename;
-
-            Log::info('Generated dynamic data for dashboard from connected file');
         } else {
-            Log::info('No displayed widgets found, showing welcome state');
             // When no file is connected, pass empty data to show welcome state
             $stats = [
                 'totalSales' => 0,
@@ -94,14 +89,12 @@ class DashboardController extends Controller
             'onboardingData' => $onboardingData,
         ];
 
-        Log::info('Rendering dashboard with connected file: ' . ($connectedFile ?? 'none'));
-
         return Inertia::render('Dashboard', $props);
     }
 
     private function generateStatsFromAIInsights($widgetInsights)
     {
-        Log::info('Generating stats from AI insights: ' . json_encode($widgetInsights));
+
 
         // Initialize default stats
         $stats = [
@@ -132,13 +125,13 @@ class DashboardController extends Controller
         // Store AI insights for frontend display
         $stats['ai_insights'] = $widgetInsights;
 
-        Log::info("AI-enhanced stats generated: " . json_encode($stats));
+
         return $stats;
     }
 
     private function generateChartDataFromAIInsights($aiInsights)
     {
-        Log::info('Generating chart data from AI insights: ' . json_encode($aiInsights));
+
 
         $chartData = [
             'barChart' => [],
@@ -161,7 +154,7 @@ class DashboardController extends Controller
             }
         }
 
-        Log::info("AI-enhanced chart data generated: " . json_encode($chartData));
+
         return $chartData;
     }
 
@@ -250,8 +243,7 @@ class DashboardController extends Controller
         $rows = $data['data'] ?? [];
         $headers = $data['headers'] ?? [];
 
-        Log::info('Processing stats from data with headers: ' . implode(', ', $headers));
-        Log::info('Number of rows: ' . count($rows));
+
 
         if (empty($rows)) {
             return $this->getDefaultStats();
@@ -263,7 +255,7 @@ class DashboardController extends Controller
         $statusColumn = $this->findColumn($headers, ['status', 'state', 'condition']);
         $dateColumn = $this->findColumn($headers, ['date', 'created', 'timestamp']);
 
-        Log::info('Found columns - Sales: ' . ($salesColumn ?? 'not found') . ', Recruiter: ' . ($recruiterColumn ?? 'not found'));
+
 
         $totalSales = 0;
         $activeRecruiters = 0;
@@ -300,7 +292,7 @@ class DashboardController extends Controller
         $targetAchievement = $totalSalesCount > 0 ? round(($completedSales / $totalSalesCount) * 100) : 0;
         $avgCommission = $activeRecruiters > 0 ? round($totalSales / $activeRecruiters) : 0;
 
-        Log::info("Calculated stats - Total Sales: $totalSales, Active Recruiters: $activeRecruiters, Target Achievement: $targetAchievement");
+
 
         return [
             'totalSales' => $totalSales,
@@ -317,11 +309,10 @@ class DashboardController extends Controller
         $rows = $data['data'] ?? [];
         $headers = $data['headers'] ?? [];
 
-        Log::info('Generating chart data from headers: ' . implode(', ', $headers));
-        Log::info('Number of rows for charts: ' . count($rows));
+
 
         if (empty($rows)) {
-            Log::info('No rows found, using default chart data');
+
             return $this->getDefaultChartData();
         }
 
@@ -334,7 +325,7 @@ class DashboardController extends Controller
         $categoryColumn = $analysis['categoryColumn'];
         $valueColumn = $analysis['valueColumn'];
 
-        Log::info('Dynamic analysis found - Category: ' . ($categoryColumn ?? 'not found') . ', Value: ' . ($valueColumn ?? 'not found'));
+
 
         if ($categoryColumn && $valueColumn) {
             $categoryTotals = [];
@@ -359,13 +350,13 @@ class DashboardController extends Controller
                 ];
             }
 
-            Log::info('Generated chart data with dynamic columns - Bar: ' . count($barChartData) . ' items, Pie: ' . count($pieChartData) . ' items');
+
         } else {
             // Fallback: use first two columns
             $firstColumn = $headers[0] ?? 'Category';
             $secondColumn = $headers[1] ?? 'Value';
 
-            Log::info('Using fallback columns - First: ' . $firstColumn . ', Second: ' . $secondColumn);
+
 
             foreach (array_slice($rows, 0, 5) as $row) {
                 $category = $row[$firstColumn] ?? 'Unknown';
@@ -382,7 +373,7 @@ class DashboardController extends Controller
                 ];
             }
 
-            Log::info('Generated chart data with fallback columns - Bar: ' . count($barChartData) . ' items, Pie: ' . count($pieChartData) . ' items');
+
         }
 
         $result = [
@@ -390,7 +381,7 @@ class DashboardController extends Controller
             'pieChart' => $pieChartData
         ];
 
-        Log::info('Final chart data: ' . json_encode($result));
+
 
         return $result;
     }
@@ -440,14 +431,14 @@ class DashboardController extends Controller
         // More specific search for value columns - prioritize exact matches
         $valueColumns = ['revenue', 'sales', 'amount', 'commission', 'hires', 'units sold'];
 
-        Log::info('Searching for value columns in headers: ' . implode(', ', $headers));
+
 
         // First, try exact matches
         foreach ($headers as $header) {
             $headerLower = strtolower($header);
             foreach ($valueColumns as $valueCol) {
                 if ($headerLower === $valueCol) {
-                    Log::info('Found exact match value column: ' . $header);
+    
                     return $header;
                 }
             }
@@ -458,13 +449,13 @@ class DashboardController extends Controller
             $headerLower = strtolower($header);
             foreach ($valueColumns as $valueCol) {
                 if (strpos($headerLower, $valueCol) !== false && $headerLower !== 'salesperson') {
-                    Log::info('Found partial match value column: ' . $header);
+    
                     return $header;
                 }
             }
         }
 
-        Log::info('No value column found');
+
         return null;
     }
 
@@ -511,7 +502,7 @@ class DashboardController extends Controller
 
     private function analyzeDataForCharts($rows, $headers)
     {
-        Log::info('Analyzing data for charts with headers: ' . implode(', ', $headers));
+
 
         $categoryColumn = null;
         $valueColumn = null;
@@ -689,32 +680,43 @@ class DashboardController extends Controller
 
         try {
             $file = $activeWidget->uploadedFile;
-            $data = $file->processed_data;
+            $userId = Auth::id();
 
-            // Generate stats from raw data (without AI)
-            $stats = $this->generateStatsFromData($data);
-
-            // Update widget configurations to use raw data
-            $widgets = FileWidgetConnection::where('uploaded_file_id', $file->id)
-                ->where('is_displayed', true)
-                ->get();
-
-            foreach ($widgets as $widget) {
-                $currentConfig = $widget->widget_config ?? [];
-                $currentConfig['data_source'] = 'raw';
-                $currentConfig['last_updated'] = now()->toISOString();
-
-                $widget->update([
-                    'widget_config' => $currentConfig
-                ]);
+            // Use RawDataService to generate widgets and get data
+            $rawDataService = new RawDataService();
+            
+            // Generate raw data widgets (4 KPI widgets + 2 charts)
+            $widgetResult = $rawDataService->generateRawDataWidgets($file, $userId);
+            
+            if (!$widgetResult['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $widgetResult['message']
+                ], 500);
             }
+
+            // Get raw data for dashboard display
+            $dataResult = $rawDataService->getRawDataForDashboard($file);
+            
+            if (!$dataResult['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $dataResult['message']
+                ], 500);
+            }
+
+            // Generate stats from raw data
+            $stats = $this->generateStatsFromRawData($dataResult['stats']);
+            $chartData = $dataResult['chartData'];
 
             Log::info('Dashboard updated with raw data for file: ' . $file->original_filename);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Dashboard updated with raw data successfully',
-                'stats' => $stats
+                'message' => 'Raw data widgets generated successfully',
+                'stats' => $stats,
+                'chartData' => $chartData,
+                'widgets' => $widgetResult['widgets']
             ]);
 
         } catch (\Exception $e) {
@@ -724,5 +726,56 @@ class DashboardController extends Controller
                 'message' => 'Error updating dashboard: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Generate stats from raw data calculations
+     */
+    private function generateStatsFromRawData($rawStats)
+    {
+        $stats = [];
+        $widgetCount = 0;
+
+        foreach ($rawStats as $column => $calculations) {
+            if ($widgetCount >= 4) break; // Limit to 4 widgets
+
+            $widgetTypes = ['sum', 'average', 'count', 'max'];
+            $widgetNames = ['Total', 'Average', 'Count', 'Maximum'];
+            $widgetIcons = ['Calculator', 'BarChart3', 'Hash', 'TrendingUp'];
+
+            foreach ($widgetTypes as $index => $type) {
+                if ($widgetCount >= 4) break;
+
+                if (isset($calculations[$type])) {
+                    $stats[] = [
+                        'title' => $widgetNames[$index] . ' ' . $column,
+                        'value' => number_format($calculations[$type], 2),
+                        'description' => ucfirst($type) . ' of ' . $column . ' values',
+                        'icon' => $widgetIcons[$index],
+                        'trend' => '+0%',
+                        'trendUp' => true,
+                        'aiSource' => null,
+                        'aiMethod' => null
+                    ];
+                    $widgetCount++;
+                }
+            }
+        }
+
+        // Fill remaining slots with default stats if needed
+        while (count($stats) < 4) {
+            $stats[] = [
+                'title' => 'No Data',
+                'value' => '0',
+                'description' => 'No numeric data available',
+                'icon' => 'BarChart3',
+                'trend' => '0%',
+                'trendUp' => false,
+                'aiSource' => null,
+                'aiMethod' => null
+            ];
+        }
+
+        return $stats;
     }
 }

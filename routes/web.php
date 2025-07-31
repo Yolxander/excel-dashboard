@@ -36,7 +36,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/combine-files/{fileId}/regenerate-insights', [CombineFilesController::class, 'regenerateAIInsights']);
     Route::get('/data-sources', [DataSourcesController::class, 'index']);
     Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);
-    
+
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
@@ -82,8 +82,30 @@ Route::get('/widget-selection/function-options/{fileId}', [App\Http\Controllers\
 
 // Privacy Policy Route (public)
 Route::get('/privacy-policy', function () {
-    return Inertia::render('PrivacyPolicy');
+    return Inertia::render('TermsOfService');
 })->name('privacy-policy');
+
+// About Route (public)
+Route::get('/about', function () {
+    return Inertia::render('About');
+})->name('about');
+
+// Contact Route (public)
+Route::get('/contact', function () {
+    return Inertia::render('Contact');
+})->name('contact');
+
+// Support Route (public)
+Route::get('/support', function () {
+    return Inertia::render('Support');
+})->name('support');
+
+// Documentation Route (public)
+Route::get('/documentation', function () {
+    return Inertia::render('Documentation');
+})->name('documentation');
+
+
 
 // Security Route (public)
 Route::get('/security', function () {

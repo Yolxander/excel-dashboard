@@ -74,8 +74,7 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
 
     // Debug: Log when component mounts
     React.useEffect(() => {
-        console.log('UploadFiles component mounted');
-        console.log('fileInputRef:', fileInputRef.current);
+        // Component mounted
     }, []);
 
     // Show success/error messages
@@ -111,13 +110,9 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
     };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        console.log('File selected:', e.target.files);
         const files = e.target.files;
         if (files && files.length > 0) {
-            console.log('Uploading file:', files[0].name);
             uploadFile(files[0]);
-        } else {
-            console.log('No files selected');
         }
     };
 
@@ -189,8 +184,6 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
         if (!fileToDelete) return;
 
         try {
-            console.log('Deleting file with ID:', fileToDelete);
-
             const response = await fetch(`/upload-files/${fileToDelete}`, {
                 method: 'DELETE',
                 headers: {
@@ -200,12 +193,8 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                 },
             });
 
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
-
             if (response.ok) {
                 const data = await response.json();
-                console.log('Response data:', data);
 
                 // Show success message
                 toast({
@@ -353,9 +342,7 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                                     <Button
                                         variant="outline"
                                         onClick={() => {
-                                            console.log('Choose Files button clicked');
-                                            console.log('fileInputRef:', fileInputRef.current);
-                                            if (fileInputRef.current) {
+                                                    if (fileInputRef.current) {
                                                 fileInputRef.current.click();
                                             } else {
                                                 console.error('File input ref is null');

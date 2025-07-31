@@ -48,8 +48,7 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
         return !noToastPages.some(page => url.startsWith(page));
     };
 
-    console.log('OnboardingChecklist props:', { initialData, className });
-    console.log('OnboardingChecklist state:', { onboardingData, isExpanded, isLoading, showCelebration });
+
 
     useEffect(() => {
         if (!initialData) {
@@ -74,11 +73,7 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
         if (onboardingData && onboardingData.progress) {
             const currentProgress = onboardingData.progress.progress_percentage;
 
-            console.log('Onboarding celebration check:', {
-                currentProgress,
-                congratulations_shown: onboardingData.congratulations_shown,
-                isCompleted: onboardingData.is_completed
-            });
+
 
             // Only show congratulations if:
             // 1. Progress is 100%
@@ -86,7 +81,7 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
             // 3. Congratulations haven't been shown before
             // 4. We're on a page where toasts should be shown
             if (currentProgress === 100 && onboardingData.is_completed && !onboardingData.congratulations_shown && shouldShowToasts()) {
-                console.log('Showing congratulations toast!');
+
                 setShowCelebration(true);
                 toast({
                     title: "🎉 Congratulations!",
@@ -109,7 +104,6 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
 
     const fetchOnboardingData = async () => {
         try {
-            console.log('Fetching onboarding data...');
             const response = await fetch('/onboarding/data', {
                 headers: {
                     'Content-Type': 'application/json',
@@ -117,11 +111,8 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
                 },
             });
 
-            console.log('Response status:', response.status);
-
             if (response.ok) {
                 const data = await response.json();
-                console.log('Onboarding data received:', data);
                 setOnboardingData(data);
 
                 // Only show toasts for newly completed steps on initial load if we haven't shown them yet
@@ -168,7 +159,7 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
             });
 
             if (response.ok) {
-                console.log('Congratulations marked as shown in database');
+
             } else {
                 console.error('Failed to mark congratulations as shown');
             }
@@ -226,24 +217,16 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
     };
 
     // Don't render if onboarding is not needed or completed
-    console.log('Onboarding component render check:', {
-        hasData: !!onboardingData,
-        shouldShow: onboardingData?.should_show,
-        isCompleted: onboardingData?.is_completed,
-        progress: onboardingData?.progress
-    });
 
     // Only render if we have data and either:
     // 1. Should show onboarding (not completed yet)
     // 2. Is completed but congratulations haven't been shown yet
     if (!onboardingData || (!onboardingData.should_show && onboardingData.congratulations_shown)) {
-        console.log('Onboarding component not rendering - conditions not met');
         return null;
     }
 
     // If onboarding is completed and congratulations have been shown, don't show the checklist
     if (onboardingData.is_completed && onboardingData.congratulations_shown) {
-        console.log('Onboarding completed and congratulations shown - not rendering checklist');
         return null;
     }
 

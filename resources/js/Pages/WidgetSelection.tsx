@@ -1241,11 +1241,7 @@ export default function WidgetSelection({
                                                 <Button
                                                     onClick={async () => {
                                                                                                                 if (newWidgetConfig.method === 'ai') {
-                                                            console.log('Starting AI widget creation...', {
-                                                                file_id: selectedFile?.id,
-                                                                description: newWidgetConfig.aiDescription || '',
-                                                                widget_type: newWidgetType,
-                                                            });
+
 
                                                             // Show progress toast for AI widget creation
                                                             const progressToast = toast({
@@ -1269,9 +1265,7 @@ export default function WidgetSelection({
                                                                     }),
                                                                 });
 
-                                                                console.log('Response status:', response.status);
                                                                 const data = await response.json();
-                                                                console.log('Response data:', data);
 
                                                                 if (data.success) {
                                                                     // Close progress toast and show success
@@ -1306,13 +1300,7 @@ export default function WidgetSelection({
                                                             }
                                                         } else if (newWidgetConfig.method === 'manual') {
                                                             // Create manual widget
-                                                            console.log('Creating manual widget:', {
-                                                                name: newWidgetName,
-                                                                type: newWidgetType,
-                                                                method: 'manual',
-                                                                config: newWidgetConfig,
-                                                                fileId: selectedFile?.id,
-                                                            });
+
 
                                                             try {
                                                                 // Call manual widget creation API

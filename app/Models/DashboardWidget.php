@@ -17,6 +17,8 @@ class DashboardWidget extends Model
         'uploaded_file_id',
         'is_active',
         'display_order',
+        'data_type',
+        'is_displayed',
     ];
 
     protected $casts = [

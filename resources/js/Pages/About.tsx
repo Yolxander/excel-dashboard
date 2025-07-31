@@ -1,21 +1,19 @@
 import type React from "react"
 import { Head, Link } from '@inertiajs/react'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Shield, Lock, Eye, Database, Cloud, ArrowRight, CheckCircle, AlertTriangle, Users, Globe, Zap, Award, Target, Heart } from "lucide-react"
+import { Users, TrendingUp, Target, Award, Heart, Globe, Shield, Zap, ArrowRight, CheckCircle, Star } from "lucide-react"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
 
-export default function SecurityPage() {
+export default function AboutPage() {
   const heroRef = useIntersectionObserver({ threshold: 0.3 })
-  const featuresRef = useIntersectionObserver({ threshold: 0.2 })
-  const complianceRef = useIntersectionObserver({ threshold: 0.3 })
-  const infrastructureRef = useIntersectionObserver({ threshold: 0.2 })
-  const privacyRef = useIntersectionObserver({ threshold: 0.2 })
+  const missionRef = useIntersectionObserver({ threshold: 0.2 })
+  const teamRef = useIntersectionObserver({ threshold: 0.3 })
+  const valuesRef = useIntersectionObserver({ threshold: 0.2 })
+  const statsRef = useIntersectionObserver({ threshold: 0.2 })
 
   return (
     <>
-      <Head title="Security - Xcel Dashboard" />
+      <Head title="About - Xcel Dashboard" />
       <div className="bg-white p-4">
         <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg">
           {/* Header */}
@@ -33,14 +31,14 @@ export default function SecurityPage() {
                   <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
                     Home
                   </Link>
-                  <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
-                    About
+                  <Link href="#mission" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
+                    Mission
                   </Link>
-                  <Link href="/contact" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
-                    Contact
+                  <Link href="#team" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
+                    Team
                   </Link>
-                  <Link href="#security" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
-                    Security
+                  <Link href="#values" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
+                    Values
                   </Link>
                   <Link href="/login" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
                     Sign in
@@ -65,13 +63,13 @@ export default function SecurityPage() {
               <h1 className={`text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight transition-all duration-700 delay-200 ${
                 heroRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
-                Enterprise-Grade Security
+                Transforming Data into Insights
               </h1>
 
               <p className={`text-lg md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto transition-all duration-700 delay-400 ${
                 heroRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
-                Your data security is our top priority. We implement military-grade encryption, secure infrastructure, and comprehensive privacy controls to protect your information at every step.
+                We're on a mission to democratize data visualization, making powerful insights accessible to everyone — from analysts to executives, from startups to enterprises.
               </p>
 
               {/* CTA Buttons */}
@@ -85,384 +83,329 @@ export default function SecurityPage() {
                     Try Xcel Dashboard
                   </Button>
                 </Link>
-                <Link href="/privacy-policy">
-                  <Button variant="outline" size="lg" className="px-8 py-3 bg-transparent transition-transform hover:scale-105">
-                    Read Privacy Policy
-                  </Button>
-                </Link>
+                <Button variant="outline" size="lg" className="px-8 py-3 bg-transparent transition-transform hover:scale-105">
+                  Contact Us
+                </Button>
               </div>
             </div>
           </main>
 
-          {/* Security Features Section */}
+          {/* Mission Section */}
           <section
-            id="security"
-            ref={featuresRef.ref}
+            id="mission"
+            ref={missionRef.ref}
             className={`container mx-auto px-4 py-12 md:py-20 transition-all duration-1000 ease-out ${
-              featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              missionRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`}
           >
             <div className="flex flex-col md:flex-row items-start justify-between mb-12 gap-8">
               <div className={`md:w-1/2 transition-all duration-700 delay-200 ${
-                featuresRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
+                missionRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
               }`}>
                 <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
                   <span className="w-2 h-2 bg-gray-700 rounded-full mr-2" />
-                  Security Features
+                  Our Mission
                 </p>
                 <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-                  Built with Security First
+                  Empowering Teams Through Data
                 </h2>
               </div>
               <div className={`md:w-1/2 flex flex-col items-start md:items-end text-left md:text-right transition-all duration-700 delay-400 ${
-                featuresRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
+                missionRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
               }`}>
                 <p className="text-lg text-gray-600 mb-6 max-w-md">
-                  From encryption to access controls, every aspect of our platform is designed with your data security in mind.
+                  We believe that data should be accessible, understandable, and actionable for everyone. Our platform transforms complex Excel files into beautiful, interactive dashboards that drive better decisions.
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              {/* Security Feature 1 */}
+              {/* Mission Card 1 */}
               <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50 transition-all duration-700 delay-300 hover:shadow-xl hover:scale-105 ${
-                featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                missionRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
                 <div className="p-6">
                   <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                    <Lock className="w-6 h-6 text-blue-600" />
+                    <Target className="w-6 h-6 text-blue-600" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    End-to-End Encryption
+                    Democratizing Data
                   </h3>
-                  <p className="text-gray-600 text-base mb-4">
-                    Military-grade AES-256 encryption protects your data both in transit and at rest.
+                  <p className="text-gray-600 text-base">
+                    Making powerful data visualization tools accessible to non-technical users, breaking down barriers between data and insights.
                   </p>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Unique encryption keys per file
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Encrypted before upload
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Secure key management
-                    </li>
-                  </ul>
                 </div>
               </div>
 
-              {/* Security Feature 2 */}
+              {/* Mission Card 2 */}
               <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50 transition-all duration-700 delay-500 hover:shadow-xl hover:scale-105 ${
-                featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                missionRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
                 <div className="p-6">
                   <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                    <Database className="w-6 h-6 text-green-600" />
+                    <TrendingUp className="w-6 h-6 text-green-600" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Secure Cloud Infrastructure
+                    Driving Growth
                   </h3>
-                  <p className="text-gray-600 text-base mb-4">
-                    Enterprise-grade AWS infrastructure with automatic encryption and redundancy.
+                  <p className="text-gray-600 text-base">
+                    Helping businesses make data-driven decisions that lead to better outcomes, increased efficiency, and sustainable growth.
                   </p>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      AWS S3 with automatic encryption
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Global CDN for fast access
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Automatic backup and redundancy
-                    </li>
-                  </ul>
                 </div>
               </div>
             </div>
 
-            {/* Additional Security Features */}
+            {/* Additional Mission Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Security Feature 3 */}
+              {/* Mission Card 3 */}
               <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50 transition-all duration-700 delay-700 hover:shadow-xl hover:scale-105 ${
-                featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                missionRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
                 <div className="p-6">
                   <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                    <Eye className="w-6 h-6 text-purple-600" />
+                    <Users className="w-6 h-6 text-purple-600" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    AI Processing Privacy
+                    Building Community
                   </h3>
-                  <p className="text-gray-600 text-base mb-4">
-                    Your data never leaves our secure infrastructure during AI processing.
+                  <p className="text-gray-600 text-base">
+                    Creating a community of data enthusiasts, analysts, and business leaders who share knowledge and best practices.
                   </p>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      No external AI model access
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Processed data only for AI
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      No third-party data sharing
-                    </li>
-                  </ul>
                 </div>
               </div>
 
-              {/* Security Feature 4 */}
+              {/* Mission Card 4 */}
               <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50 transition-all duration-700 delay-900 hover:shadow-xl hover:scale-105 ${
-                featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                missionRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
                 <div className="p-6">
                   <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-                    <Users className="w-6 h-6 text-orange-600" />
+                    <Zap className="w-6 h-6 text-orange-600" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Granular Access Control
+                    Innovation First
                   </h3>
-                  <p className="text-gray-600 text-base mb-4">
-                    Advanced user permissions and authentication controls for your data.
+                  <p className="text-gray-600 text-base">
+                    Continuously innovating to provide cutting-edge features that keep our users ahead of the curve in data visualization.
                   </p>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      User-specific file access
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Password-protected dashboards
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      Private link sharing
-                    </li>
-                  </ul>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Compliance Section */}
+          {/* Team Section */}
           <section
-            ref={complianceRef.ref}
+            id="team"
+            ref={teamRef.ref}
             className={`container mx-auto px-4 py-12 md:py-20 transition-all duration-1000 ease-out ${
-              complianceRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              teamRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`}
           >
             <div className={`text-center mb-12 transition-all duration-700 delay-200 ${
-              complianceRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              teamRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`}>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Security Certifications</p>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
-                Industry Standards & Compliance
-              </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                We maintain the highest security standards and comply with industry regulations to protect your data.
+              <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center justify-center">
+                <span className="w-2 h-2 bg-gray-700 rounded-full mr-2" />
+                Meet Our Team
               </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Compliance 1 */}
-              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-300 hover:shadow-xl hover:scale-105 ${
-                complianceRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}>
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">SOC 2 Compliant</h3>
-                <p className="text-gray-600 text-sm">Type II certification for security, availability, and confidentiality</p>
-              </div>
-
-              {/* Compliance 2 */}
-              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-400 hover:shadow-xl hover:scale-105 ${
-                complianceRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}>
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                  <Globe className="w-6 h-6 text-green-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">GDPR Ready</h3>
-                <p className="text-gray-600 text-sm">Full compliance with European data protection regulations</p>
-              </div>
-
-              {/* Compliance 3 */}
-              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-500 hover:shadow-xl hover:scale-105 ${
-                complianceRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}>
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                  <Database className="w-6 h-6 text-purple-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">HIPAA Compatible</h3>
-                <p className="text-gray-600 text-sm">Meets healthcare data protection requirements</p>
-              </div>
-
-              {/* Compliance 4 */}
-              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-600 hover:shadow-xl hover:scale-105 ${
-                complianceRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}>
-                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-                  <Cloud className="w-6 h-6 text-orange-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">AWS Security</h3>
-                <p className="text-gray-600 text-sm">Built on AWS with enterprise security features</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Infrastructure Section */}
-          <section
-            ref={infrastructureRef.ref}
-            className={`container mx-auto px-4 py-12 md:py-20 transition-all duration-1000 ease-out ${
-              infrastructureRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}
-          >
-            <div className={`text-center mb-12 transition-all duration-700 delay-200 ${
-              infrastructureRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Our Infrastructure</p>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
-                Secure by Design
-              </h2>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">The People Behind Xcel Dashboard</h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Every layer of our infrastructure is built with security and reliability in mind.
+                We're a passionate team of data scientists, designers, and engineers committed to making data visualization accessible to everyone.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Infrastructure 1 */}
+              {/* Team Member 1 */}
               <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-300 hover:shadow-xl hover:scale-105 ${
-                infrastructureRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                teamRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                  <Zap className="w-6 h-6 text-blue-600" />
+                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4 mx-auto">
+                  <Users className="w-8 h-8 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">99.9% Uptime</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  High availability with automatic failover and redundancy across multiple data centers.
-                </p>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li>• Multi-region deployment</li>
-                  <li>• Automatic scaling</li>
-                  <li>• Real-time monitoring</li>
-                </ul>
+                <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Sarah Chen</h3>
+                <p className="text-gray-600 text-sm text-center mb-4">CEO & Founder</p>
+                <p className="text-gray-600 text-sm text-center">Former data scientist at Google, passionate about democratizing data visualization.</p>
               </div>
 
-              {/* Infrastructure 2 */}
+              {/* Team Member 2 */}
               <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-500 hover:shadow-xl hover:scale-105 ${
-                infrastructureRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                teamRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                  <Target className="w-6 h-6 text-green-600" />
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4 mx-auto">
+                  <TrendingUp className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">DDoS Protection</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Advanced protection against distributed denial of service attacks and malicious traffic.
-                </p>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li>• AWS Shield Advanced</li>
-                  <li>• Real-time threat detection</li>
-                  <li>• Automatic mitigation</li>
-                </ul>
+                <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Michael Rodriguez</h3>
+                <p className="text-gray-600 text-sm text-center mb-4">CTO</p>
+                <p className="text-gray-600 text-sm text-center">Full-stack engineer with 10+ years building scalable data platforms.</p>
               </div>
 
-              {/* Infrastructure 3 */}
+              {/* Team Member 3 */}
               <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-700 hover:shadow-xl hover:scale-105 ${
-                infrastructureRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                teamRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                  <Award className="w-6 h-6 text-purple-600" />
+                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-4 mx-auto">
+                  <Heart className="w-8 h-8 text-purple-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Regular Audits</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Continuous security assessments and third-party penetration testing to ensure protection.
-                </p>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li>• Quarterly security audits</li>
-                  <li>• Penetration testing</li>
-                  <li>• Vulnerability assessments</li>
-                </ul>
+                <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">Emily Watson</h3>
+                <p className="text-gray-600 text-sm text-center mb-4">Head of Design</p>
+                <p className="text-gray-600 text-sm text-center">UX designer focused on creating intuitive, beautiful data experiences.</p>
               </div>
             </div>
           </section>
 
-          {/* Privacy Notice Section */}
+          {/* Values Section */}
           <section
-            ref={privacyRef.ref}
+            id="values"
+            ref={valuesRef.ref}
             className={`container mx-auto px-4 py-12 md:py-20 transition-all duration-1000 ease-out ${
-              privacyRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              valuesRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`}
           >
             <div className={`text-center mb-12 transition-all duration-700 delay-200 ${
-              privacyRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              valuesRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`}>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Important Information</p>
+              <p className="text-sm font-semibold text-gray-700 mb-2">Our Values</p>
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
-                Your Privacy Matters
+                What Drives Us Forward
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                We're committed to transparency about how we protect and handle your data.
+                These core values guide everything we do, from product development to customer support.
               </p>
             </div>
 
-            <div className="max-w-4xl mx-auto">
-              <Card className="border-orange-200 bg-orange-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-orange-800">
-                    <AlertTriangle className="h-5 w-5" />
-                    Security & Privacy Commitment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-orange-800 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">• Your files are encrypted before upload</p>
-                        <p className="text-sm font-medium">• Only you can access your encrypted files</p>
-                        <p className="text-sm font-medium">• AI processing uses processed data only</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">• No personal data shared with external services</p>
-                        <p className="text-sm font-medium">• All processing within secure infrastructure</p>
-                        <p className="text-sm font-medium">• Regular security audits and updates</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Value 1 */}
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-300 hover:shadow-xl hover:scale-105 ${
+                valuesRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                  <Shield className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Trust & Security</h3>
+                <p className="text-gray-600 text-sm">Your data security is our top priority. We implement enterprise-grade security measures to protect your information.</p>
+              </div>
+
+              {/* Value 2 */}
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-400 hover:shadow-xl hover:scale-105 ${
+                valuesRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">User-First Design</h3>
+                <p className="text-gray-600 text-sm">Every feature is designed with our users in mind. We believe great products should be both powerful and simple to use.</p>
+              </div>
+
+              {/* Value 3 */}
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-500 hover:shadow-xl hover:scale-105 ${
+                valuesRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
+                  <Globe className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Global Impact</h3>
+                <p className="text-gray-600 text-sm">We're building tools that help organizations worldwide make better decisions through data-driven insights.</p>
+              </div>
+
+              {/* Value 4 */}
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-600 hover:shadow-xl hover:scale-105 ${
+                valuesRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                  <Heart className="w-6 h-6 text-red-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Passion for Data</h3>
+                <p className="text-gray-600 text-sm">We're passionate about data and believe it has the power to transform businesses and improve lives.</p>
+              </div>
+
+              {/* Value 5 */}
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-700 hover:shadow-xl hover:scale-105 ${
+                valuesRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mb-4">
+                  <Award className="w-6 h-6 text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Excellence</h3>
+                <p className="text-gray-600 text-sm">We strive for excellence in everything we do, from code quality to customer support to user experience.</p>
+              </div>
+
+              {/* Value 6 */}
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-800 hover:shadow-xl hover:scale-105 ${
+                valuesRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-4">
+                  <Zap className="w-6 h-6 text-orange-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Innovation</h3>
+                <p className="text-gray-600 text-sm">We constantly push the boundaries of what's possible in data visualization and analytics.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Stats Section */}
+          <section
+            ref={statsRef.ref}
+            className={`container mx-auto px-4 py-12 md:py-20 transition-all duration-1000 ease-out ${
+              statsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            <div className={`text-center mb-12 transition-all duration-700 delay-200 ${
+              statsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
+                Our Impact in Numbers
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {/* Stat 1 */}
+              <div className={`text-center transition-all duration-700 delay-300 ${
+                statsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="text-4xl font-bold text-blue-600 mb-2">10K+</div>
+                <div className="text-gray-600">Active Users</div>
+              </div>
+
+              {/* Stat 2 */}
+              <div className={`text-center transition-all duration-700 delay-500 ${
+                statsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="text-4xl font-bold text-green-600 mb-2">50K+</div>
+                <div className="text-gray-600">Dashboards Created</div>
+              </div>
+
+              {/* Stat 3 */}
+              <div className={`text-center transition-all duration-700 delay-700 ${
+                statsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="text-4xl font-bold text-purple-600 mb-2">99.9%</div>
+                <div className="text-gray-600">Uptime</div>
+              </div>
+
+              {/* Stat 4 */}
+              <div className={`text-center transition-all duration-700 delay-900 ${
+                statsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="text-4xl font-bold text-orange-600 mb-2">4.9★</div>
+                <div className="text-gray-600">User Rating</div>
+              </div>
             </div>
           </section>
 
           {/* Call to Action Section */}
           <section className="container mx-auto px-4 py-12 md:py-20 text-center">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Ready to Get Started?</p>
+            <p className="text-sm font-semibold text-gray-700 mb-2">Join Our Mission</p>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
-              Trust Your Data with Us
+              Ready to Transform Your Data?
             </h2>
             <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-              Join thousands of users who trust Xcel Dashboard with their sensitive data. Start your free trial today.
+              Start creating beautiful dashboards today and join thousands of users who are already making better decisions with their data.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/login">
-                <Button size="lg" className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-full">
-                  Start Free Trial
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button variant="outline" size="lg" className="px-8 py-3 bg-transparent rounded-full">
-                  Contact Security Team
-                </Button>
-              </Link>
-            </div>
+            <Link href="/login">
+              <Button size="lg" className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-full">
+                Get Started Free
+              </Button>
+            </Link>
           </section>
         </div>
       </div>

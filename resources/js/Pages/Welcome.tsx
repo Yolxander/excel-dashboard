@@ -537,8 +537,8 @@ export default function WelcomePage() {
                 <ul className="space-y-2 text-sm">
                   <li><Link href="/security" className="text-gray-600 hover:text-gray-900 transition-colors">Security</Link></li>
                   <li><Link href="/privacy-policy" className="text-gray-600 hover:text-gray-900 transition-colors">Privacy Policy</Link></li>
-                  <li><a href="mailto:support@xceldashboard.com" className="text-gray-600 hover:text-gray-900 transition-colors">Support</a></li>
-                  <li><a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Documentation</a></li>
+                  <li><Link href="/support" className="text-gray-600 hover:text-gray-900 transition-colors">Support</Link></li>
+                  <li><Link href="/documentation" className="text-gray-600 hover:text-gray-900 transition-colors">Documentation</Link></li>
                 </ul>
               </div>
 
@@ -546,8 +546,8 @@ export default function WelcomePage() {
               <div>
                 <h4 className="font-bold text-gray-900 mb-4">Company</h4>
                 <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">About</a></li>
-                  <li><a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Contact</a></li>
+                  <li><Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors">About</Link></li>
+                  <li><Link href="/contact" className="text-gray-600 hover:text-gray-900 transition-colors">Contact</Link></li>
                   <li><a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Careers</a></li>
                   <li><a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">Partners</a></li>
                 </ul>
@@ -562,9 +562,9 @@ export default function WelcomePage() {
               <Link href="/privacy-policy" className="text-sm text-gray-600 hover:text-gray-900 transition-colors underline">
                 Privacy Policy
               </Link>
-              <a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition-colors underline">
+              <Link href="/terms-of-service" className="text-sm text-gray-600 hover:text-gray-900 transition-colors underline">
                 Terms of Service
-              </a>
+              </Link>
               <a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition-colors underline">
                 Cookies Settings
               </a>

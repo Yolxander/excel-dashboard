@@ -79,18 +79,30 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets, onboar
             const connectFile = async (fileId: number) => {
         setConnectingFile(fileId);
         try {
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+
             // First, connect the file
             const connectResponse = await fetch(`/connected-files/${fileId}/connect`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
                 },
             });
 
+                        if (!connectResponse.ok) {
+                const errorText = await connectResponse.text();
+                throw new Error(`HTTP ${connectResponse.status}: ${errorText}`);
+            }
+
             const connectResult = await connectResponse.json();
 
-                        if (connectResult.success) {
+            if (connectResult.success) {
                 // Update the connected files state
                 setConnectedFileIds(prev => new Set([...prev, fileId]));
 
@@ -160,17 +172,29 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets, onboar
     const disconnectFile = async (fileId: number) => {
         setDisconnectingFile(fileId);
         try {
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+
             const response = await fetch(`/connected-files/${fileId}/disconnect`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
                 },
             });
 
+                        if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
             const result = await response.json();
 
-                        if (result.success) {
+            if (result.success) {
                 // Update the connected files state
                 setConnectedFileIds(prev => {
                     const newSet = new Set(prev);
