@@ -117,6 +117,7 @@ class OnboardingService
             'should_show' => $shouldShow,
             'progress' => $progress,
             'is_completed' => $isCompleted,
+            'congratulations_shown' => $user->hasShownOnboardingCongratulations(),
         ];
 
         Log::info("Onboarding data for user {$user->id}: " . json_encode($data));
@@ -171,5 +172,14 @@ class OnboardingService
         // Log current progress
         $progress = self::getOnboardingData($user);
         Log::info("Current onboarding progress for user {$user->id}: " . json_encode($progress));
+    }
+
+    /**
+     * Reset onboarding congratulations status for testing
+     */
+    public static function resetCongratulationsStatus(User $user)
+    {
+        $user->update(['onboarding_congratulations_shown' => false]);
+        Log::info("Reset congratulations status for user {$user->id}");
     }
 }

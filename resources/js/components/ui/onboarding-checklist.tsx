@@ -22,6 +22,7 @@ interface OnboardingData {
         steps: OnboardingStep[];
     };
     is_completed: boolean;
+    congratulations_shown: boolean;
 }
 
 interface OnboardingChecklistProps {
@@ -63,14 +64,27 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
         if (onboardingData && onboardingData.progress) {
             const currentProgress = onboardingData.progress.progress_percentage;
 
-            // Check if user just completed all steps
-            if (currentProgress === 100 && previousProgress < 100) {
+            console.log('Onboarding celebration check:', {
+                currentProgress,
+                congratulations_shown: onboardingData.congratulations_shown,
+                isCompleted: onboardingData.is_completed
+            });
+
+            // Only show congratulations if:
+            // 1. Progress is 100%
+            // 2. Onboarding is completed
+            // 3. Congratulations haven't been shown before
+            if (currentProgress === 100 && onboardingData.is_completed && !onboardingData.congratulations_shown) {
+                console.log('Showing congratulations toast!');
                 setShowCelebration(true);
                 toast({
                     title: "🎉 Congratulations!",
                     description: "You've completed the onboarding process!",
                     variant: "default",
                 });
+
+                // Mark as shown in the database
+                markCongratulationsAsShown();
 
                 // Hide celebration after 5 seconds
                 setTimeout(() => {
@@ -80,7 +94,7 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
 
             setPreviousProgress(currentProgress);
         }
-    }, [onboardingData, previousProgress, toast]);
+    }, [onboardingData, toast]);
 
     const fetchOnboardingData = async () => {
         try {
@@ -123,6 +137,26 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
             console.error('Failed to fetch onboarding data:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const markCongratulationsAsShown = async () => {
+        try {
+            const response = await fetch('/onboarding/mark-congratulations-shown', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            if (response.ok) {
+                console.log('Congratulations marked as shown in database');
+            } else {
+                console.error('Failed to mark congratulations as shown');
+            }
+        } catch (error) {
+            console.error('Error marking congratulations as shown:', error);
         }
     };
 
@@ -175,8 +209,17 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
         progress: onboardingData?.progress
     });
 
-    if (!onboardingData || !onboardingData.should_show || onboardingData.is_completed) {
+    // Only render if we have data and either:
+    // 1. Should show onboarding (not completed yet)
+    // 2. Is completed but congratulations haven't been shown yet
+    if (!onboardingData || (!onboardingData.should_show && onboardingData.congratulations_shown)) {
         console.log('Onboarding component not rendering - conditions not met');
+        return null;
+    }
+
+    // If onboarding is completed and congratulations have been shown, don't show the checklist
+    if (onboardingData.is_completed && onboardingData.congratulations_shown) {
+        console.log('Onboarding completed and congratulations shown - not rendering checklist');
         return null;
     }
 

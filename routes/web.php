@@ -54,6 +54,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/onboarding/data', [OnboardingController::class, 'getOnboardingData']);
     Route::post('/onboarding/mark-step', [OnboardingController::class, 'markStepCompleted']);
     Route::post('/onboarding/check-progress', [OnboardingController::class, 'checkProgress']);
+    Route::post('/onboarding/mark-congratulations-shown', [OnboardingController::class, 'markCongratulationsShown']);
+    Route::post('/onboarding/reset-congratulations', [OnboardingController::class, 'resetCongratulationsStatus']);
 });
 
 Route::get('/widget-selection', [App\Http\Controllers\WidgetSelectionController::class, 'index'])->name('widget-selection');

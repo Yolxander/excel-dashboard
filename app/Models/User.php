@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'onboarding_congratulations_shown',
     ];
 
     /**
@@ -43,6 +44,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'onboarding_congratulations_shown' => 'boolean',
         ];
     }
 
@@ -80,5 +82,21 @@ class User extends Authenticatable
     public function getOnboardingProgress()
     {
         return OnboardingStep::getOnboardingProgress($this->id);
+    }
+
+    /**
+     * Mark onboarding congratulations as shown
+     */
+    public function markOnboardingCongratulationsShown()
+    {
+        $this->update(['onboarding_congratulations_shown' => true]);
+    }
+
+    /**
+     * Check if onboarding congratulations has been shown
+     */
+    public function hasShownOnboardingCongratulations()
+    {
+        return $this->onboarding_congratulations_shown;
     }
 }

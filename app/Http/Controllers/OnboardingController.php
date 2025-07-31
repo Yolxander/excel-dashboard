@@ -61,4 +61,32 @@ class OnboardingController extends Controller
             'onboarding_data' => OnboardingService::getOnboardingData($user),
         ]);
     }
+
+    /**
+     * Mark onboarding congratulations as shown
+     */
+    public function markCongratulationsShown(): JsonResponse
+    {
+        $user = Auth::user();
+        $user->markOnboardingCongratulationsShown();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Congratulations marked as shown',
+        ]);
+    }
+
+    /**
+     * Reset onboarding congratulations status (for testing)
+     */
+    public function resetCongratulationsStatus(): JsonResponse
+    {
+        $user = Auth::user();
+        OnboardingService::resetCongratulationsStatus($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Congratulations status reset',
+        ]);
+    }
 }
