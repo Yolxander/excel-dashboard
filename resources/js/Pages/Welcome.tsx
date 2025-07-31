@@ -486,9 +486,9 @@ export default function WelcomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200">
+      <footer className="bg-white">
         <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-12">
             {/* Left Side - Brand & Social */}
             <div className="space-y-6">
               {/* Logo and Description */}
@@ -530,18 +530,7 @@ export default function WelcomePage() {
             </div>
 
             {/* Right Side - Navigation Links */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Product */}
-              <div>
-                <h4 className="font-bold text-gray-900 mb-4">Product</h4>
-                <ul className="space-y-2 text-sm">
-                  <li><Link href="/dashboard" className="text-gray-600 hover:text-gray-900 transition-colors">Dashboard</Link></li>
-                  <li><Link href="/upload-files" className="text-gray-600 hover:text-gray-900 transition-colors">Upload Files</Link></li>
-                  <li><Link href="/connected-files" className="text-gray-600 hover:text-gray-900 transition-colors">Source Files</Link></li>
-                  <li><Link href="/combine-files" className="text-gray-600 hover:text-gray-900 transition-colors">Combine Files</Link></li>
-                </ul>
-              </div>
-
+            <div className="flex space-x-12">
               {/* Resources */}
               <div>
                 <h4 className="font-bold text-gray-900 mb-4">Resources</h4>
