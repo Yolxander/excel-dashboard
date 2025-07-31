@@ -22,8 +22,8 @@ export default function WelcomePage() {
             <div className="max-w-7xl mx-auto">
               <div className="bg-white rounded-lg px-6 py-3 shadow-sm border border-gray-100/50 flex items-center justify-between">
                 <div className="flex items-center space-x-2.5">
-                  <div className="w-8 h-8 bg-gradient-to-br from-orange-400 via-orange-500 to-pink-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">X</span>
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">X</span>
                   </div>
                   <span className="text-lg font-semibold text-gray-900">Xcel Dashboard</span>
                 </div>

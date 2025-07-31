@@ -75,13 +75,18 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
             {/* Sidebar */}
-            <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
+            <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg border-r border-gray-100/50">
                 <div className="flex flex-col h-full">
                     {/* Logo */}
-                    <div className="flex items-center justify-center h-16 px-4 border-b">
-                        <h1 className="text-xl font-bold text-gray-900">Excel Dashboard</h1>
+                    <div className="flex items-center justify-center h-16 px-4 border-b border-gray-100/50">
+                                            <div className="flex items-center space-x-2.5">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">X</span>
+                        </div>
+                        <span className="text-lg font-semibold text-gray-900">Xcel Dashboard</span>
+                    </div>
                     </div>
 
                     {/* Navigation */}
@@ -119,7 +124,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                                 <button className="w-full flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 transition-colors">
                                     <Avatar className="h-8 w-8">
                                         <AvatarImage src={user?.avatar} alt={user?.name} />
-                                        <AvatarFallback className="bg-gradient-to-br from-orange-400 via-orange-500 to-pink-500 text-white text-sm font-semibold">
+                                        <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
                                             {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                                         </AvatarFallback>
                                     </Avatar>
@@ -167,7 +172,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
             {/* Main Content */}
             <div className="pl-64">
                 {/* Header */}
-                <header className="bg-white shadow-sm border-b">
+                <header className="bg-white shadow-sm border-b border-gray-100/50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="py-6 flex items-center justify-between">
                             {/* Left side - Page title */}
@@ -237,11 +242,11 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                 </main>
 
                 {/* Footer */}
-                <footer className="bg-white border-t mt-8">
+                <footer className="bg-white border-t border-gray-100/50 mt-8">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                         <div className="flex items-center justify-between text-sm text-gray-600">
                             <div className="flex items-center space-x-4">
-                                <span>© 2024 Excel Dashboard. All rights reserved.</span>
+                                <span>© 2025 Xcel Dashboard. All rights reserved.</span>
                                 <Link
                                     href="/privacy-policy"
                                     className="text-blue-600 hover:text-blue-800 underline"
