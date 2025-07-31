@@ -75,6 +75,9 @@ Route::post('/widget-selection/create-manual-widget', [App\Http\Controllers\Widg
 Route::get('/widget-selection/suggestions/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetSuggestions'])->name('widget-selection.suggestions');
 Route::get('/widget-selection/function-options/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetFunctionOptions'])->name('widget-selection.function-options');
 
+// Widget Creation Routes
+Route::get('/create-widget/{fileId}/{widgetType}', [App\Http\Controllers\CreateWidgetController::class, 'index'])->name('create-widget');
+
 // Privacy Policy Route (public)
 Route::get('/privacy-policy', function () {
     return Inertia::render('TermsOfService');

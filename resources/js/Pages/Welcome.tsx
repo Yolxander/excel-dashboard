@@ -11,6 +11,8 @@ export default function WelcomePage() {
   const ctaRef = useIntersectionObserver({ threshold: 0.3 })
   const industryRef = useIntersectionObserver({ threshold: 0.2 })
   const testimonialsRef = useIntersectionObserver({ threshold: 0.2 })
+  const howItWorksRef = useIntersectionObserver({ threshold: 0.2 })
+  const getStartedRef = useIntersectionObserver({ threshold: 0.3 })
 
   return (
     <>
@@ -374,14 +376,30 @@ export default function WelcomePage() {
           </section>
 
           {/* How It Works Section */}
-          <section id="how-it-works" className="container mx-auto px-4 py-12 md:py-20 text-center">
-            <p className="text-sm font-semibold text-gray-700 mb-2">How It Works</p>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">Simple 4-Step Process</h2>
-            <p className="text-lg text-gray-600 mb-12">Get started in minutes, not hours</p>
+          <section
+            id="how-it-works"
+            ref={howItWorksRef.ref}
+            className={`container mx-auto px-4 py-12 md:py-20 text-center transition-all duration-1000 ease-out ${
+              howItWorksRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            <p className={`text-sm font-semibold text-gray-700 mb-2 transition-all duration-700 delay-200 ${
+              howItWorksRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>How It Works</p>
+            <h2 className={`text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight transition-all duration-700 delay-400 ${
+              howItWorksRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>Simple 4-Step Process</h2>
+            <p className={`text-lg text-gray-600 mb-12 transition-all duration-700 delay-600 ${
+              howItWorksRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>Get started in minutes, not hours</p>
 
-            <div className="flex flex-col md:flex-row items-start gap-12">
+            <div className={`flex flex-col md:flex-row items-start gap-12 transition-all duration-700 delay-800 ${
+              howItWorksRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
               {/* Left side: Process Steps */}
-              <div className="md:w-1/2 space-y-6">
+              <div className={`md:w-1/2 space-y-6 transition-all duration-700 delay-1000 ${
+                howItWorksRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
+              }`}>
                 <div className="bg-white rounded-lg p-6 border border-gray-100/50">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">1</div>
@@ -416,7 +434,9 @@ export default function WelcomePage() {
               </div>
 
               {/* Right side: Security & Features */}
-              <div className="md:w-1/2 text-left space-y-6">
+              <div className={`md:w-1/2 text-left space-y-6 transition-all duration-700 delay-1200 ${
+                howItWorksRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
+              }`}>
                 <div className="bg-white rounded-lg p-6 border border-gray-100/50">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <Lock className="w-5 h-5" />
@@ -459,20 +479,37 @@ export default function WelcomePage() {
           </section>
 
           {/* Call to Action Section */}
-          <section className="container mx-auto px-4 py-12 md:py-20 text-center">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Get Started Free</p>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
+          <section
+            ref={getStartedRef.ref}
+            className={`container mx-auto px-4 py-12 md:py-20 text-center transition-all duration-1000 ease-out ${
+              getStartedRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            <p className={`text-sm font-semibold text-gray-700 mb-2 transition-all duration-700 delay-200 ${
+              getStartedRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>Get Started Free</p>
+            <h2 className={`text-4xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight transition-all duration-700 delay-400 ${
+              getStartedRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
               No tech setup. No learning curve.
             </h2>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            <p className={`text-lg text-gray-600 mb-8 max-w-2xl mx-auto transition-all duration-700 delay-600 ${
+              getStartedRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
               Just upload your Excel file and watch the magic happen.
             </p>
-            <Link href="/login">
-              <Button size="lg" className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-full">
-                Try Xcel Dashboard Now
-              </Button>
-            </Link>
-            <div className="relative mt-12">
+            <div className={`transition-all duration-700 delay-800 ${
+              getStartedRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
+              <Link href="/login">
+                <Button size="lg" className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-full">
+                  Try Xcel Dashboard Now
+                </Button>
+              </Link>
+            </div>
+            <div className={`relative mt-12 transition-all duration-700 delay-1000 ${
+              getStartedRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
               <img
                 src="/welcome/files.png"
                 alt="Blurred Dashboard Interface"

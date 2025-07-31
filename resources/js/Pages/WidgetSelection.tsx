@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +25,7 @@ import {
     CheckCircle,
     Circle,
     ArrowLeft,
+    ArrowRight,
     Save,
     RefreshCw,
     Database,
@@ -86,15 +87,7 @@ export default function WidgetSelection({
     const [isSaving, setIsSaving] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
-    const [isAddingWidget, setIsAddingWidget] = useState(false);
-    const [newWidgetName, setNewWidgetName] = useState('');
-    const [newWidgetType, setNewWidgetType] = useState('kpi');
-    const [newWidgetConfig, setNewWidgetConfig] = useState<any>({});
-    const [widgetSuggestions, setWidgetSuggestions] = useState<any>(null);
-    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-    const [functionOptions, setFunctionOptions] = useState<any[]>([]);
-    const [isLoadingFunctionOptions, setIsLoadingFunctionOptions] = useState(false);
-    const [selectedFunction, setSelectedFunction] = useState<any>(null);
+
     const { toast } = useToast();
 
     // Initialize state on component mount
@@ -337,42 +330,6 @@ export default function WidgetSelection({
             });
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const loadFunctionOptions = async (file: UploadedFile, widgetType: string) => {
-        setIsLoadingFunctionOptions(true);
-        try {
-            const response = await fetch(`/widget-selection/function-options/${file.id}?widget_type=${widgetType}`);
-            const data = await response.json();
-
-            if (data.success) {
-                setFunctionOptions(data.options);
-            } else {
-                console.error('Failed to load function options:', data.message);
-            }
-        } catch (error) {
-            console.error('Error loading function options:', error);
-        } finally {
-            setIsLoadingFunctionOptions(false);
-        }
-    };
-
-    const loadWidgetSuggestions = async (file: UploadedFile) => {
-        setIsLoadingSuggestions(true);
-        try {
-            const response = await fetch(`/widget-selection/suggestions/${file.id}`);
-            const data = await response.json();
-
-            if (data.success) {
-                setWidgetSuggestions(data.suggestions);
-            } else {
-                console.error('Failed to load suggestions:', data.message);
-            }
-        } catch (error) {
-            console.error('Error loading widget suggestions:', error);
-        } finally {
-            setIsLoadingSuggestions(false);
         }
     };
 
@@ -625,767 +582,251 @@ export default function WidgetSelection({
                                         <>
                                             {/* KPI Widgets */}
                                             {kpiWidgets.length > 0 && (
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle className="flex items-center justify-between">
-                                                    <div className="flex items-center">
-                                                        <Database className="h-5 w-5 mr-2" />
-                                                        KPI Widgets
-                                                    </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <Badge variant="outline" className="text-blue-600 border-blue-200">
-                                                            {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'kpi').length}/4 Selected
-                                                        </Badge>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={async () => {
-                                                                setNewWidgetType('kpi');
-                                                                setNewWidgetName('');
-                                                                setNewWidgetConfig({});
-                                                                setSelectedFunction(null);
-                                                                setIsAddingWidget(true);
-                                                                if (selectedFile) {
-                                                                    await loadWidgetSuggestions(selectedFile);
-                                                                    await loadFunctionOptions(selectedFile, 'kpi');
-                                                                }
-                                                            }}
-                                                        >
-                                                            <Plus className="h-4 w-4 mr-1" />
-                                                            Add KPI
-                                                        </Button>
-                                                    </div>
-                                                </CardTitle>
-                                                <CardDescription>
-                                                    Select up to 4 KPI widgets to display on your dashboard
-                                                </CardDescription>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {kpiWidgets.map((widget) => {
-                                                        const isSelected = displayedWidgetIds.includes(widget.id);
-                                                        const isDisabled = !isSelected &&
-                                                            displayedWidgetIds.filter(id =>
-                                                                widgets.find(w => w.id === id)?.widget_type === 'kpi'
-                                                            ).length >= 4;
-
-                                                        return (
-                                                            <div
-                                                                key={widget.id}
-                                                                className={`p-4 border rounded-lg transition-colors ${
-                                                                    isSelected
-                                                                        ? 'border-blue-500 bg-blue-50'
-                                                                        : isDisabled
-                                                                        ? 'border-gray-200 bg-gray-50 opacity-60'
-                                                                        : 'border-gray-200 hover:border-gray-300'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center space-x-3">
-                                                                        <Checkbox
-                                                                            checked={isSelected}
-                                                                            onCheckedChange={() => handleWidgetToggle(widget.id)}
-                                                                            disabled={isDisabled}
-                                                                        />
-                                                                        <div className="flex items-center space-x-2">
-                                                                            {getWidgetIcon(widget.widget_type)}
-                                                                            <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
-                                                                                {widget.widget_name}
-                                                                            </span>
-                                                                            {isDisabled && (
-                                                                                <Badge variant="secondary" className="text-xs">
-                                                                                    Limit Reached
-                                                                                </Badge>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => handleRemoveWidget(widget.id)}
-                                                                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                                    >
-                                                                        <X className="h-4 w-4" />
-                                                                    </Button>
-                                                                </div>
-                                                                {widget.widget_config?.description && (
-                                                                    <p className={`text-sm mt-2 ml-6 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
-                                                                        {widget.widget_config.description}
-                                                                    </p>
-                                                                )}
+                                                <Card>
+                                                    <CardHeader>
+                                                        <CardTitle className="flex items-center justify-between">
+                                                            <div className="flex items-center">
+                                                                <Database className="h-5 w-5 mr-2" />
+                                                                KPI Widgets
                                                             </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    )}
-
-                                    {/* Chart Widgets */}
-                                    {chartWidgets.length > 0 && (
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle className="flex items-center justify-between">
-                                                    <div className="flex items-center">
-                                                        <BarChart3 className="h-5 w-5 mr-2" />
-                                                        Chart Widgets
-                                                    </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <Badge variant="outline" className="text-blue-600 border-blue-200">
-                                                            {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'bar_chart' || widgets.find(w => w.id === id)?.widget_type === 'pie_chart').length}/2 Selected
-                                                        </Badge>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={async () => {
-                                                                setNewWidgetType('bar_chart');
-                                                                setNewWidgetName('');
-                                                                setNewWidgetConfig({});
-                                                                setSelectedFunction(null);
-                                                                setIsAddingWidget(true);
-                                                                if (selectedFile) {
-                                                                    await loadWidgetSuggestions(selectedFile);
-                                                                    await loadFunctionOptions(selectedFile, 'bar_chart');
-                                                                }
-                                                            }}
-                                                        >
-                                                            <Plus className="h-4 w-4 mr-1" />
-                                                            Add Chart
-                                                        </Button>
-                                                    </div>
-                                                </CardTitle>
-                                                <CardDescription>
-                                                    Select up to 2 chart widgets to display on your dashboard
-                                                </CardDescription>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {chartWidgets.map((widget) => {
-                                                        const isSelected = displayedWidgetIds.includes(widget.id);
-                                                        const isDisabled = !isSelected &&
-                                                            displayedWidgetIds.filter(id =>
-                                                                widgets.find(w => w.id === id)?.widget_type === 'bar_chart' ||
-                                                                widgets.find(w => w.id === id)?.widget_type === 'pie_chart'
-                                                            ).length >= 2;
-
-                                                        return (
-                                                            <div
-                                                                key={widget.id}
-                                                                className={`p-4 border rounded-lg transition-colors ${
-                                                                    isSelected
-                                                                        ? 'border-blue-500 bg-blue-50'
-                                                                        : isDisabled
-                                                                        ? 'border-gray-200 bg-gray-50 opacity-60'
-                                                                        : 'border-gray-200 hover:border-gray-300'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center space-x-3">
-                                                                        <Checkbox
-                                                                            checked={isSelected}
-                                                                            onCheckedChange={() => handleWidgetToggle(widget.id)}
-                                                                            disabled={isDisabled}
-                                                                        />
-                                                                        <div className="flex items-center space-x-2">
-                                                                            {getWidgetIcon(widget.widget_type)}
-                                                                            <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
-                                                                                {widget.widget_name}
-                                                                            </span>
-                                                                            {isDisabled && (
-                                                                                <Badge variant="secondary" className="text-xs">
-                                                                                    Limit Reached
-                                                                                </Badge>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => handleRemoveWidget(widget.id)}
-                                                                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                                    >
-                                                                        <X className="h-4 w-4" />
-                                                                    </Button>
-                                                                </div>
-                                                                {widget.widget_config?.description && (
-                                                                    <p className={`text-sm mt-2 ml-6 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
-                                                                        {widget.widget_config.description}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    )}
-
-                                    {/* Table Widgets */}
-                                    {tableWidgets.length > 0 && (
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle className="flex items-center">
-                                                    <FileText className="h-5 w-5 mr-2" />
-                                                    Table Widgets
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {tableWidgets.map((widget) => (
-                                                        <div
-                                                            key={widget.id}
-                                                            className={`p-4 border rounded-lg ${
-                                                                displayedWidgetIds.includes(widget.id)
-                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                    : 'border-gray-200'
-                                                            }`}
-                                                        >
-                                                            <div className="flex items-center space-x-3">
-                                                                <Checkbox
-                                                                    checked={displayedWidgetIds.includes(widget.id)}
-                                                                    onCheckedChange={() => handleWidgetToggle(widget.id)}
-                                                                />
-                                                                <div className="flex items-center space-x-2">
-                                                                    {getWidgetIcon(widget.widget_type)}
-                                                                    <span className="font-medium">{widget.widget_name}</span>
-                                                                </div>
-                                                            </div>
-                                                            {widget.widget_config?.description && (
-                                                                <p className="text-sm text-gray-600 mt-2 ml-6">
-                                                                    {widget.widget_config.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    )}
-
-                                    {/* Add New Widget Modal */}
-                                    <Dialog open={isAddingWidget} onOpenChange={setIsAddingWidget}>
-                                        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                                            <DialogHeader className="space-y-3">
-                                                <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                                                    <Plus className="h-6 w-6 mr-2 text-blue-600" />
-                                                    Add New Widget
-                                                </DialogTitle>
-                                                <DialogDescription className="text-gray-600 text-base">
-                                                    Create a new widget for this file using AI or manual configuration.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="space-y-6 py-6">
-                                                {/* Creation Method Selection - Based on Data Type */}
-                                                <div className="space-y-3">
-                                                    <Label className="text-sm font-semibold text-gray-700">
-                                                        Creation Method
-                                                    </Label>
-                                                    {dataType === 'ai' ? (
-                                                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                                            <div className="flex items-center space-x-2 mb-2">
-                                                                <BrainCircuit className="h-5 w-5 text-blue-600" />
-                                                                <span className="font-medium text-blue-900">AI Analysis Mode</span>
-                                                            </div>
-                                                            <p className="text-sm text-blue-700">
-                                                                In AI Analysis mode, widgets are automatically generated using AI insights.
-                                                                You can provide optional descriptions to guide the AI.
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                                            <div className="flex items-center space-x-2 mb-2">
-                                                                <Database className="h-5 w-5 text-gray-600" />
-                                                                <span className="font-medium text-gray-900">Raw Data Mode</span>
-                                                            </div>
-                                                            <p className="text-sm text-gray-700">
-                                                                In Raw Data mode, you manually configure widgets by selecting columns and functions.
-                                                                This gives you full control over your data visualization.
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Widget Name - Required for Raw Data Mode */}
-                                                {dataType === 'raw' && (
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="widget-name" className="text-sm font-semibold text-gray-700">
-                                                            Widget Name
-                                                        </Label>
-                                                        <Input
-                                                            id="widget-name"
-                                                            value={newWidgetName}
-                                                            onChange={(e) => setNewWidgetName(e.target.value)}
-                                                            placeholder="Enter a descriptive name for your widget"
-                                                            className="h-12 text-base"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {/* AI Method Form - Only for AI Analysis Mode */}
-                                                {dataType === 'ai' && (
-                                                    <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                                        <Label htmlFor="ai-description" className="text-sm font-semibold text-gray-700">
-                                                            What should this widget be about?
-                                                        </Label>
-                                                        <Textarea
-                                                            id="ai-description"
-                                                            value={newWidgetConfig.aiDescription || ''}
-                                                            onChange={(e) => setNewWidgetConfig({ ...newWidgetConfig, aiDescription: e.target.value })}
-                                                            placeholder="(Optional) Describe what you want this widget to show or analyze. For example: 'Show total sales by month' or 'Display customer satisfaction trends'. Leave empty to let AI generate a new widget automatically."
-                                                            className="min-h-[100px] text-base resize-none"
-                                                        />
-                                                        <p className="text-xs text-gray-500">
-                                                            Optional: Be specific about what data you want to visualize or analyze. Leave empty to let AI generate a completely new widget.
-                                                        </p>
-                                                    </div>
-                                                )}
-
-                                                {/* AI Suggestions for Manual Creation - Only for Raw Data Mode */}
-                                                {dataType === 'raw' && widgetSuggestions && (
-                                                    <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                                        <div className="flex items-center space-x-2 mb-3">
-                                                            <BrainCircuit className="h-5 w-5 text-blue-600" />
-                                                            <h4 className="font-semibold text-blue-900">AI Suggestions</h4>
-                                                        </div>
-
-                                                        {isLoadingSuggestions ? (
-                                                            <div className="text-center py-4">
-                                                                <RefreshCw className="h-6 w-6 text-blue-600 mx-auto mb-2 animate-spin" />
-                                                                <p className="text-sm text-blue-700">Loading AI suggestions...</p>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="space-y-4">
-                                                                {/* KPI Suggestions */}
-                                                                {widgetSuggestions.kpi_suggestions && widgetSuggestions.kpi_suggestions.length > 0 && (
-                                                                    <div>
-                                                                        <h5 className="font-medium text-blue-800 mb-2">KPI Widget Suggestions</h5>
-                                                                        <div className="grid grid-cols-1 gap-2">
-                                                                            {widgetSuggestions.kpi_suggestions.slice(0, 3).map((suggestion: any, index: number) => (
-                                                                                <Button
-                                                                                    key={index}
-                                                                                    variant="outline"
-                                                                                    size="sm"
-                                                                                    onClick={() => {
-                                                                                        setNewWidgetType('kpi');
-                                                                                        setNewWidgetName(suggestion.name);
-                                                                                        setNewWidgetConfig({ ...newWidgetConfig, column: suggestion.column });
-                                                                                    }}
-                                                                                    className="justify-start text-left h-auto p-3 bg-white hover:bg-blue-50"
-                                                                                >
-                                                                                    <div className="flex items-center space-x-2">
-                                                                                        <TrendingUp className="h-4 w-4 text-blue-600" />
-                                                                                        <div>
-                                                                                            <p className="font-medium text-sm">{suggestion.name}</p>
-                                                                                            <p className="text-xs text-gray-600">{suggestion.description}</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </Button>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* Chart Suggestions */}
-                                                                {widgetSuggestions.chart_suggestions && widgetSuggestions.chart_suggestions.length > 0 && (
-                                                                    <div>
-                                                                        <h5 className="font-medium text-blue-800 mb-2">Chart Widget Suggestions</h5>
-                                                                        <div className="grid grid-cols-1 gap-2">
-                                                                            {widgetSuggestions.chart_suggestions.slice(0, 3).map((suggestion: any, index: number) => (
-                                                                                <Button
-                                                                                    key={index}
-                                                                                    variant="outline"
-                                                                                    size="sm"
-                                                                                    onClick={() => {
-                                                                                        setNewWidgetType(suggestion.type);
-                                                                                        setNewWidgetName(suggestion.name);
-                                                                                        if (suggestion.type === 'bar_chart') {
-                                                                                            setNewWidgetConfig({
-                                                                                                ...newWidgetConfig,
-                                                                                                xAxis: suggestion.x_axis,
-                                                                                                yAxis: suggestion.y_axis
-                                                                                            });
-                                                                                        } else if (suggestion.type === 'pie_chart') {
-                                                                                            setNewWidgetConfig({
-                                                                                                ...newWidgetConfig,
-                                                                                                categoryColumn: suggestion.category_column,
-                                                                                                valueColumn: suggestion.value_column
-                                                                                            });
-                                                                                        }
-                                                                                    }}
-                                                                                    className="justify-start text-left h-auto p-3 bg-white hover:bg-blue-50"
-                                                                                >
-                                                                                    <div className="flex items-center space-x-2">
-                                                                                        {suggestion.chart_type === 'bar' ? (
-                                                                                            <BarChart3 className="h-4 w-4 text-green-600" />
-                                                                                        ) : (
-                                                                                            <PieChart className="h-4 w-4 text-purple-600" />
-                                                                                        )}
-                                                                                        <div>
-                                                                                            <p className="font-medium text-sm">{suggestion.name}</p>
-                                                                                            <p className="text-xs text-gray-600">{suggestion.description}</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </Button>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* Data Insights */}
-                                                                {widgetSuggestions.data_insights && widgetSuggestions.data_insights.length > 0 && (
-                                                                    <div>
-                                                                        <h5 className="font-medium text-blue-800 mb-2">Data Insights</h5>
-                                                                        <div className="space-y-2">
-                                                                            {widgetSuggestions.data_insights.slice(0, 2).map((insight: any, index: number) => (
-                                                                                <div key={index} className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
-                                                                                    <strong>{insight.display_name}:</strong> {insight.recommendation}
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Manual Method Form */}
-                                                {newWidgetConfig.method === 'manual' && (
-                                                    <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                                                        {/* Widget Type Selection */}
-                                                        <div className="space-y-2">
-                                                            <Label htmlFor="widget-type" className="text-sm font-semibold text-gray-700">
-                                                                Widget Type
-                                                            </Label>
-                                                            <Select onValueChange={async (value) => {
-                                                                setNewWidgetType(value);
-                                                                setSelectedFunction(null);
-                                                                if (selectedFile) {
-                                                                    await loadFunctionOptions(selectedFile, value);
-                                                                }
-                                                            }} value={newWidgetType}>
-                                                                <SelectTrigger className="h-12 text-base">
-                                                                    <SelectValue placeholder="Select a widget type" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="kpi" className="flex items-center space-x-2">
-                                                                        <TrendingUp className="h-4 w-4 mr-2" />
-                                                                        KPI Widget
-                                                                    </SelectItem>
-                                                                    <SelectItem value="bar_chart" className="flex items-center space-x-2">
-                                                                        <BarChart3 className="h-4 w-4 mr-2" />
-                                                                        Bar Chart
-                                                                    </SelectItem>
-                                                                    <SelectItem value="pie_chart" className="flex items-center space-x-2">
-                                                                        <PieChart className="h-4 w-4 mr-2" />
-                                                                        Pie Chart
-                                                                    </SelectItem>
-                                                                    <SelectItem value="table" className="flex items-center space-x-2">
-                                                                        <Table className="h-4 w-4 mr-2" />
-                                                                        Table
-                                                                    </SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-
-                                                        {/* Widget Function Selection */}
-                                                        {functionOptions.length > 0 && (
-                                                            <div className="space-y-2">
-                                                                <Label htmlFor="function-select" className="text-sm font-semibold text-gray-700">
-                                                                    What should this widget do?
-                                                                </Label>
-                                                                <Select onValueChange={(value) => {
-                                                                    const selected = functionOptions.find(option => option.id === value);
-                                                                    setSelectedFunction(selected);
-                                                                    if (selected) {
-                                                                        setNewWidgetName(selected.label);
-                                                                        if (selected.function === 'sum' || selected.function === 'average' || selected.function === 'count' || selected.function === 'min' || selected.function === 'max') {
-                                                                            setNewWidgetConfig({ ...newWidgetConfig, column: selected.column, function: selected.function });
-                                                                        } else if (selected.function === 'group_by_sum') {
-                                                                            setNewWidgetConfig({ ...newWidgetConfig, xAxis: selected.x_axis, yAxis: selected.y_axis, function: selected.function });
-                                                                        } else if (selected.function === 'distribution') {
-                                                                            setNewWidgetConfig({ ...newWidgetConfig, categoryColumn: selected.category_column, valueColumn: selected.value_column, function: selected.function });
+                                                            <div className="flex items-center space-x-2">
+                                                                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                                                    {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'kpi').length}/4 Selected
+                                                                </Badge>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => {
+                                                                        if (selectedFile) {
+                                                                            window.location.href = `/create-widget/${selectedFile.id}/kpi`;
                                                                         }
-                                                                    }
-                                                                }} value={selectedFunction?.id || ''}>
-                                                                    <SelectTrigger className="h-12 text-base">
-                                                                        <SelectValue placeholder="Choose what this widget should calculate" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {functionOptions.map((option) => (
-                                                                            <SelectItem key={option.id} value={option.id}>
-                                                                                <div className="flex flex-col">
-                                                                                    <span className="font-medium">{option.label}</span>
-                                                                                    <span className="text-xs text-gray-500">{option.description}</span>
-                                                                                    {option.formatted_value && (
-                                                                                        <span className="text-xs text-blue-600">Current: {option.formatted_value}</span>
+                                                                    }}
+                                                                >
+                                                                    <Plus className="h-4 w-4 mr-1" />
+                                                                    Add KPI
+                                                                </Button>
+                                                            </div>
+                                                        </CardTitle>
+                                                        <CardDescription>
+                                                            Select up to 4 KPI widgets to display on your dashboard
+                                                        </CardDescription>
+                                                    </CardHeader>
+                                                    <CardContent>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {kpiWidgets.map((widget) => {
+                                                                const isSelected = displayedWidgetIds.includes(widget.id);
+                                                                const isDisabled = !isSelected &&
+                                                                    displayedWidgetIds.filter(id =>
+                                                                        widgets.find(w => w.id === id)?.widget_type === 'kpi'
+                                                                    ).length >= 4;
+
+                                                                return (
+                                                                    <div
+                                                                        key={widget.id}
+                                                                        className={`p-4 border rounded-lg transition-colors ${
+                                                                            isSelected
+                                                                                ? 'border-blue-500 bg-blue-50'
+                                                                                : isDisabled
+                                                                                ? 'border-gray-200 bg-gray-50 opacity-60'
+                                                                                : 'border-gray-200 hover:border-gray-300'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-center space-x-3">
+                                                                                <Checkbox
+                                                                                    checked={isSelected}
+                                                                                    onCheckedChange={() => handleWidgetToggle(widget.id)}
+                                                                                    disabled={isDisabled}
+                                                                                />
+                                                                                <div className="flex items-center space-x-2">
+                                                                                    {getWidgetIcon(widget.widget_type)}
+                                                                                    <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
+                                                                                        {widget.widget_name}
+                                                                                    </span>
+                                                                                    {isDisabled && (
+                                                                                        <Badge variant="secondary" className="text-xs">
+                                                                                            Limit Reached
+                                                                                        </Badge>
                                                                                     )}
                                                                                 </div>
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                                {selectedFunction && (
-                                                                    <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                                                                        <strong>Calculation:</strong> {selectedFunction.calculation}
-                                                                        {selectedFunction.formatted_value && (
-                                                                            <span className="ml-2 text-blue-600">
-                                                                                (Current value: {selectedFunction.formatted_value})
-                                                                            </span>
+                                                                            </div>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => handleRemoveWidget(widget.id)}
+                                                                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                            >
+                                                                                <X className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </div>
+                                                                        {widget.widget_config?.description && (
+                                                                            <p className={`text-sm mt-2 ml-6 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                                                {widget.widget_config.description}
+                                                                            </p>
                                                                         )}
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Chart Configuration for Bar Charts */}
-                                                        {newWidgetType === 'bar_chart' && (
-                                                            <div className="space-y-4 p-4 bg-white rounded-lg border border-gray-200">
-                                                                <h4 className="font-semibold text-gray-700 mb-3">Chart Configuration</h4>
-                                                                <div className="grid grid-cols-2 gap-4">
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="x-axis" className="text-sm font-medium text-gray-600">
-                                                                            X-Axis
-                                                                        </Label>
-                                                                        <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, xAxis: value })} value={newWidgetConfig.xAxis}>
-                                                                            <SelectTrigger className="h-10">
-                                                                                <SelectValue placeholder="Select X-Axis" />
-                                                                            </SelectTrigger>
-                                                                            <SelectContent>
-                                                                                {selectedFile?.processed_data?.headers?.map((header: string) => (
-                                                                                    <SelectItem key={header} value={header}>
-                                                                                        {header}
-                                                                                    </SelectItem>
-                                                                                ))}
-                                                                            </SelectContent>
-                                                                        </Select>
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="y-axis" className="text-sm font-medium text-gray-600">
-                                                                            Y-Axis
-                                                                        </Label>
-                                                                        <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, yAxis: value })} value={newWidgetConfig.yAxis}>
-                                                                            <SelectTrigger className="h-10">
-                                                                                <SelectValue placeholder="Select Y-Axis" />
-                                                                            </SelectTrigger>
-                                                                            <SelectContent>
-                                                                                {selectedFile?.processed_data?.headers?.map((header: string) => (
-                                                                                    <SelectItem key={header} value={header}>
-                                                                                        {header}
-                                                                                    </SelectItem>
-                                                                                ))}
-                                                                            </SelectContent>
-                                                                        </Select>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Chart Configuration for Pie Charts */}
-                                                        {newWidgetType === 'pie_chart' && (
-                                                            <div className="space-y-4 p-4 bg-white rounded-lg border border-gray-200">
-                                                                <h4 className="font-semibold text-gray-700 mb-3">Chart Configuration</h4>
-                                                                <div className="grid grid-cols-2 gap-4">
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="category-column" className="text-sm font-medium text-gray-600">
-                                                                            Category Column
-                                                                        </Label>
-                                                                        <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, categoryColumn: value })} value={newWidgetConfig.categoryColumn}>
-                                                                            <SelectTrigger className="h-10">
-                                                                                <SelectValue placeholder="Select Category Column" />
-                                                                            </SelectTrigger>
-                                                                            <SelectContent>
-                                                                                {selectedFile?.processed_data?.headers?.map((header: string) => (
-                                                                                    <SelectItem key={header} value={header}>
-                                                                                        {header}
-                                                                                    </SelectItem>
-                                                                                ))}
-                                                                            </SelectContent>
-                                                                        </Select>
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="value-column" className="text-sm font-medium text-gray-600">
-                                                                            Value Column
-                                                                        </Label>
-                                                                        <Select onValueChange={(value) => setNewWidgetConfig({ ...newWidgetConfig, valueColumn: value })} value={newWidgetConfig.valueColumn}>
-                                                                            <SelectTrigger className="h-10">
-                                                                                <SelectValue placeholder="Select Value Column" />
-                                                                            </SelectTrigger>
-                                                                            <SelectContent>
-                                                                                {selectedFile?.processed_data?.headers?.map((header: string) => (
-                                                                                    <SelectItem key={header} value={header}>
-                                                                                        {header}
-                                                                                    </SelectItem>
-                                                                                ))}
-                                                                            </SelectContent>
-                                                                        </Select>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => setIsAddingWidget(false)}
-                                                    className="px-6 py-2"
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <Button
-                                                    onClick={async () => {
-                                                                                                                if (dataType === 'ai') {
-
-
-                                                            // Show progress toast for AI widget creation
-                                                            const progressToast = toast({
-                                                                title: 'Creating AI Widget...',
-                                                                description: 'Please wait while AI generates your widget.',
-                                                                duration: Infinity, // Keep toast open until completion
-                                                            });
-
-                                                            try {
-                                                                // Call AI service to create widget
-                                                                const response = await fetch('/ai/create-widget', {
-                                                                    method: 'POST',
-                                                                    headers: {
-                                                                        'Content-Type': 'application/json',
-                                                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                                                                    },
-                                                                    body: JSON.stringify({
-                                                                        file_id: selectedFile?.id,
-                                                                        description: newWidgetConfig.aiDescription || '',
-                                                                        widget_type: newWidgetType,
-                                                                    }),
-                                                                });
-
-                                                                const data = await response.json();
-
-                                                                if (data.success) {
-                                                                    // Close progress toast and show success
-                                                                    progressToast.dismiss();
-                                                                    toast({
-                                                                        title: 'AI Widget Created!',
-                                                                        description: `Widget "${data.widget_name || 'New Widget'}" has been created successfully.`,
-                                                                        duration: 5000,
-                                                                    });
-
-                                                                    // Reload widgets for the file
-                                                                    if (selectedFile) {
-                                                                        await handleFileSelect(selectedFile);
-                                                                    }
-
-                                                                    // Close the modal and reset form
-                                                                    setIsAddingWidget(false);
-                                                                    setNewWidgetConfig({});
-                                                                    setNewWidgetName('');
-                                                                } else {
-                                                                    throw new Error(data.message || 'Failed to create widget');
-                                                                }
-                                                            } catch (error) {
-                                                                console.error('Error creating AI widget:', error);
-                                                                progressToast.dismiss();
-                                                                toast({
-                                                                    title: 'Error creating widget',
-                                                                    description: error.message || 'There was an error creating the widget. Please try again.',
-                                                                    variant: 'destructive',
-                                                                    duration: 5000,
-                                                                });
-                                                            }
-                                                        } else if (dataType === 'raw') {
-                                                            // Create manual widget
-
-
-                                                            try {
-                                                                // Call manual widget creation API
-                                                                const response = await fetch('/widget-selection/create-manual-widget', {
-                                                                    method: 'POST',
-                                                                    headers: {
-                                                                        'Content-Type': 'application/json',
-                                                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                                                                    },
-                                                                    body: JSON.stringify({
-                                                                        file_id: selectedFile?.id,
-                                                                        widget_name: newWidgetName,
-                                                                        widget_type: newWidgetType,
-                                                                        column: selectedFunction?.column,
-                                                                        x_axis: selectedFunction?.x_axis,
-                                                                        y_axis: selectedFunction?.y_axis,
-                                                                        category_column: selectedFunction?.category_column,
-                                                                        value_column: selectedFunction?.value_column,
-                                                                        function: selectedFunction?.function,
-                                                                    }),
-                                                                });
-
-                                                                const data = await response.json();
-
-                                                                if (data.success) {
-                                                                    toast({
-                                                                        title: 'Widget created!',
-                                                                        description: `Widget "${data.widget_name}" has been created successfully.`,
-                                                                    });
-
-                                                                    // Reload widgets for the file
-                                                                    if (selectedFile) {
-                                                                        await handleFileSelect(selectedFile);
-                                                                    }
-
-                                                                    // Close the modal and reset form
-                                                                    setIsAddingWidget(false);
-                                                                    setNewWidgetConfig({});
-                                                                    setNewWidgetName('');
-                                                                } else {
-                                                                    throw new Error(data.message || 'Failed to create widget');
-                                                                }
-                                                            } catch (error) {
-                                                                console.error('Error creating manual widget:', error);
-                                                                toast({
-                                                                    title: 'Error creating widget',
-                                                                    description: error.message || 'There was an error creating the widget. Please try again.',
-                                                                    variant: 'destructive',
-                                                                    duration: 5000,
-                                                                });
-                                                            }
-                                                        }
-                                                    }}
-                                                                                                        disabled={
-                                                        !newWidgetConfig.method ||
-                                                        (newWidgetConfig.method === 'manual' && (
-                                                            !newWidgetName ||
-                                                            !selectedFunction
-                                                        ))
-                                                    }
-                                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700"
-                                                >
-                                                    <Plus className="h-4 w-4 mr-2" />
-                                                    Create Widget
-                                                </Button>
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
-
-                                    {/* Save Button */}
-                                    <div className="flex justify-end">
-                                        <Button
-                                            onClick={handleSaveSelection}
-                                            disabled={isSaving}
-                                            className="w-full md:w-auto"
-                                        >
-                                            {isSaving ? (
-                                                <>
-                                                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="h-4 w-4 mr-2" />
-                                                    Save Selection
-                                                </>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
                                             )}
-                                        </Button>
-                                    </div>
+
+                                            {/* Chart Widgets */}
+                                            {chartWidgets.length > 0 && (
+                                                <Card>
+                                                    <CardHeader>
+                                                        <CardTitle className="flex items-center justify-between">
+                                                            <div className="flex items-center">
+                                                                <BarChart3 className="h-5 w-5 mr-2" />
+                                                                Chart Widgets
+                                                            </div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                                                    {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'bar_chart' || widgets.find(w => w.id === id)?.widget_type === 'pie_chart').length}/2 Selected
+                                                                </Badge>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => {
+                                                                        if (selectedFile) {
+                                                                            window.location.href = `/create-widget/${selectedFile.id}/chart`;
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <Plus className="h-4 w-4 mr-1" />
+                                                                    Add Chart
+                                                                </Button>
+                                                            </div>
+                                                        </CardTitle>
+                                                        <CardDescription>
+                                                            Select up to 2 chart widgets to display on your dashboard
+                                                        </CardDescription>
+                                                    </CardHeader>
+                                                    <CardContent>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {chartWidgets.map((widget) => {
+                                                                const isSelected = displayedWidgetIds.includes(widget.id);
+                                                                const isDisabled = !isSelected &&
+                                                                    displayedWidgetIds.filter(id =>
+                                                                        widgets.find(w => w.id === id)?.widget_type === 'bar_chart' ||
+                                                                        widgets.find(w => w.id === id)?.widget_type === 'pie_chart'
+                                                                    ).length >= 2;
+
+                                                                return (
+                                                                    <div
+                                                                        key={widget.id}
+                                                                        className={`p-4 border rounded-lg transition-colors ${
+                                                                            isSelected
+                                                                                ? 'border-blue-500 bg-blue-50'
+                                                                                : isDisabled
+                                                                                ? 'border-gray-200 bg-gray-50 opacity-60'
+                                                                                : 'border-gray-200 hover:border-gray-300'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-center space-x-3">
+                                                                                <Checkbox
+                                                                                    checked={isSelected}
+                                                                                    onCheckedChange={() => handleWidgetToggle(widget.id)}
+                                                                                    disabled={isDisabled}
+                                                                                />
+                                                                                <div className="flex items-center space-x-2">
+                                                                                    {getWidgetIcon(widget.widget_type)}
+                                                                                    <span className={`font-medium ${isDisabled ? 'text-gray-500' : ''}`}>
+                                                                                        {widget.widget_name}
+                                                                                    </span>
+                                                                                    {isDisabled && (
+                                                                                        <Badge variant="secondary" className="text-xs">
+                                                                                            Limit Reached
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => handleRemoveWidget(widget.id)}
+                                                                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                            >
+                                                                                <X className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </div>
+                                                                        {widget.widget_config?.description && (
+                                                                            <p className={`text-sm mt-2 ml-6 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                                                {widget.widget_config.description}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+
+                                            {/* Table Widgets */}
+                                            {tableWidgets.length > 0 && (
+                                                <Card>
+                                                    <CardHeader>
+                                                        <CardTitle className="flex items-center">
+                                                            <FileText className="h-5 w-5 mr-2" />
+                                                            Table Widgets
+                                                        </CardTitle>
+                                                    </CardHeader>
+                                                    <CardContent>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {tableWidgets.map((widget) => (
+                                                                <div
+                                                                    key={widget.id}
+                                                                    className={`p-4 border rounded-lg ${
+                                                                        displayedWidgetIds.includes(widget.id)
+                                                                            ? 'border-blue-500 bg-blue-50'
+                                                                            : 'border-gray-200'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <Checkbox
+                                                                            checked={displayedWidgetIds.includes(widget.id)}
+                                                                            onCheckedChange={() => handleWidgetToggle(widget.id)}
+                                                                        />
+                                                                        <div className="flex items-center space-x-2">
+                                                                            {getWidgetIcon(widget.widget_type)}
+                                                                            <span className="font-medium">{widget.widget_name}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    {widget.widget_config?.description && (
+                                                                        <p className="text-sm text-gray-600 mt-2 ml-6">
+                                                                            {widget.widget_config.description}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+
+                                            {/* Save Button */}
+                                            <div className="flex justify-end">
+                                                <Button
+                                                    onClick={handleSaveSelection}
+                                                    disabled={isSaving}
+                                                    className="w-full md:w-auto"
+                                                >
+                                                    {isSaving ? (
+                                                        <>
+                                                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                                            Saving...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Save className="h-4 w-4 mr-2" />
+                                                            Save Selection
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
                                         </>
                                     )}
                                 </div>
