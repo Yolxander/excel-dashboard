@@ -6,6 +6,7 @@ use App\Models\DashboardWidget;
 use App\Models\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Services\FileEncryptionService;
 
 class RawDataService
 {
@@ -17,14 +18,14 @@ class RawDataService
         try {
             // Read the Excel file
             $data = $this->readExcelFile($file);
-            
+
             if (empty($data)) {
                 throw new \Exception('No data found in the file');
             }
 
             // Get column names from the first row
             $columns = array_keys($data[0]);
-            
+
             // Delete existing raw data widgets for this user
             DashboardWidget::where('user_id', $userId)
                 ->where('data_type', 'raw')
@@ -60,45 +61,62 @@ class RawDataService
      */
     private function readExcelFile(UploadedFile $file): array
     {
-        $filePath = storage_path('app/' . $file->file_path);
-        
-        if (!file_exists($filePath)) {
-            throw new \Exception('File not found');
-        }
+        try {
+            // Use FileEncryptionService to decrypt and retrieve the file
+            $encryptionService = new FileEncryptionService();
+            $decryptedFile = $encryptionService->decryptAndRetrieve($file->file_path, $file->original_filename);
 
-        // Use PhpSpreadsheet to read the file
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
-        $worksheet = $spreadsheet->getActiveSheet();
-        
-        $data = [];
-        $headers = [];
-        $firstRow = true;
+            $tempPath = $decryptedFile['temp_path'];
 
-        foreach ($worksheet->getRowIterator() as $row) {
-            $rowData = [];
-            $cellIterator = $row->getCellIterator();
-            $cellIterator->setIterateOnlyExistingCells(false);
-            
-            $colIndex = 0;
-            foreach ($cellIterator as $cell) {
-                $value = $cell->getValue();
-                
-                if ($firstRow) {
-                    $headers[$colIndex] = $value ?: "Column" . ($colIndex + 1);
-                } else {
-                    $rowData[$headers[$colIndex]] = $value;
+            if (!file_exists($tempPath)) {
+                throw new \Exception('Decrypted file not found at temporary path');
+            }
+
+            // Use PhpSpreadsheet to read the file
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tempPath);
+            $worksheet = $spreadsheet->getActiveSheet();
+
+            $data = [];
+            $headers = [];
+            $firstRow = true;
+
+            foreach ($worksheet->getRowIterator() as $row) {
+                $rowData = [];
+                $cellIterator = $row->getCellIterator();
+                $cellIterator->setIterateOnlyExistingCells(false);
+
+                $colIndex = 0;
+                foreach ($cellIterator as $cell) {
+                    $value = $cell->getValue();
+
+                    if ($firstRow) {
+                        $headers[$colIndex] = $value ?: "Column" . ($colIndex + 1);
+                    } else {
+                        $rowData[$headers[$colIndex]] = $value;
+                    }
+                    $colIndex++;
                 }
-                $colIndex++;
-            }
-            
-            if (!$firstRow && !empty($rowData)) {
-                $data[] = $rowData;
-            }
-            
-            $firstRow = false;
-        }
 
-        return $data;
+                if (!$firstRow && !empty($rowData)) {
+                    $data[] = $rowData;
+                }
+
+                $firstRow = false;
+            }
+
+            // Clean up temporary file
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            return $data;
+        } catch (\Exception $e) {
+            // Clean up temporary file in case of error
+            if (isset($tempPath) && file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -107,11 +125,11 @@ class RawDataService
     private function getNumericColumns(array $data, array $columns): array
     {
         $numericColumns = [];
-        
+
         foreach ($columns as $column) {
             $hasNumericData = false;
             $sampleCount = 0;
-            
+
             foreach ($data as $row) {
                 if (isset($row[$column])) {
                     $value = $row[$column];
@@ -122,7 +140,7 @@ class RawDataService
                     }
                 }
             }
-            
+
             if ($hasNumericData) {
                 $numericColumns[] = $column;
             }
@@ -148,7 +166,7 @@ class RawDataService
             $widgetIcon = $widgetIcons[$i];
 
             $value = $this->calculateWidgetValue($data, $column, $widgetType);
-            
+
             $widget = DashboardWidget::create([
                 'user_id' => $userId,
                 'widget_name' => $widgetName,
@@ -177,7 +195,7 @@ class RawDataService
     {
         $widgets = [];
         $numericColumns = $this->getNumericColumns($data, $columns);
-        
+
         // Generate bar chart widget
         if (count($numericColumns) >= 1) {
             $barChartColumn = $numericColumns[0];
@@ -253,7 +271,7 @@ class RawDataService
     {
         try {
             $data = $this->readExcelFile($file);
-            
+
             if (empty($data)) {
                 return [
                     'success' => false,
@@ -270,7 +288,7 @@ class RawDataService
                 $values = array_filter(array_column($data, $column), function($value) {
                     return is_numeric($value) && $value !== null && $value !== '';
                 });
-                
+
                 if (!empty($values)) {
                     $stats[$column] = [
                         'sum' => array_sum($values),
@@ -332,4 +350,4 @@ class RawDataService
 
         return $chartData;
     }
-} 
+}

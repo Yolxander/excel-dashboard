@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use App\Services\OnboardingService;
+
 use App\Services\FileEncryptionService;
 
 class UploadFilesController extends Controller
@@ -26,13 +26,13 @@ class UploadFilesController extends Controller
         // Only select necessary columns to reduce memory usage
         $uploadedFiles = UploadedFile::where('user_id', Auth::id())
             ->select([
-                'id', 
-                'filename', 
-                'original_filename', 
-                'file_type', 
-                'file_size', 
-                'status', 
-                'created_at', 
+                'id',
+                'filename',
+                'original_filename',
+                'file_type',
+                'file_size',
+                'status',
+                'created_at',
                 'is_encrypted',
                 'processed_data',
                 'error_message'
@@ -49,15 +49,10 @@ class UploadFilesController extends Controller
             'memory_usage' => memory_get_usage(true) / 1024 / 1024 . ' MB'
         ]);
 
-        // Get onboarding data
-        $user = Auth::user();
-        $onboardingData = OnboardingService::getOnboardingData($user);
-
         return Inertia::render('UploadFiles', [
             'uploadedFiles' => $uploadedFiles,
             'success' => session('success'),
             'error' => session('error'),
-            'onboardingData' => $onboardingData,
         ]);
     }
 
@@ -127,9 +122,7 @@ class UploadFilesController extends Controller
             ]);
             $this->processExcelFile($uploadedFile);
 
-            // Check onboarding progress after file upload
-            $user = Auth::user();
-            OnboardingService::checkAndMarkSteps($user);
+
 
             Log::info('File upload process completed successfully', [
                 'file_id' => $uploadedFile->id,

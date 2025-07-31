@@ -6,9 +6,10 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\UploadedFile;
 use App\Models\FileWidgetConnection;
+use App\Models\DashboardWidget;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use App\Services\OnboardingService;
+
 
 class WidgetSelectionController extends Controller
 {
@@ -22,8 +23,9 @@ class WidgetSelectionController extends Controller
         $currentFile = null;
         $availableWidgets = [];
         $displayedWidgets = [];
+        $dataType = 'ai'; // default
 
-        // Get the currently connected file
+        // Get the currently connected file from FileWidgetConnection (AI widgets)
         $connectedFile = FileWidgetConnection::with('uploadedFile')
             ->whereHas('uploadedFile', function($query) {
                 $query->where('user_id', Auth::id());
@@ -32,7 +34,34 @@ class WidgetSelectionController extends Controller
             ->orderBy('display_order')
             ->first();
 
-        if ($connectedFile && $connectedFile->uploadedFile) {
+        // Get the currently connected file from DashboardWidget (Raw data widgets)
+        $dashboardWidget = DashboardWidget::where('user_id', Auth::id())
+            ->where('is_displayed', true)
+            ->orderBy('display_order')
+            ->first();
+
+        // Determine which type of widgets are active
+        if ($dashboardWidget) {
+            $dataType = 'raw';
+            // For raw data widgets, get the most recent file
+            $currentFile = UploadedFile::where('user_id', Auth::id())
+                ->where('status', 'completed')
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            if ($currentFile) {
+                // Get raw data widgets
+                $availableWidgets = DashboardWidget::where('user_id', Auth::id())
+                    ->orderBy('display_order')
+                    ->get();
+
+                $displayedWidgets = DashboardWidget::where('user_id', Auth::id())
+                    ->where('is_displayed', true)
+                    ->orderBy('display_order')
+                    ->get();
+            }
+        } elseif ($connectedFile && $connectedFile->uploadedFile) {
+            $dataType = 'ai';
             $currentFile = $connectedFile->uploadedFile;
 
             // Get all available widgets for this file
@@ -47,16 +76,14 @@ class WidgetSelectionController extends Controller
                 ->get();
         }
 
-        // Get onboarding data
-        $user = Auth::user();
-        $onboardingData = OnboardingService::getOnboardingData($user);
+
 
         return Inertia::render('WidgetSelection', [
             'uploadedFiles' => $uploadedFiles,
             'currentFile' => $currentFile,
             'availableWidgets' => $availableWidgets,
             'displayedWidgets' => $displayedWidgets,
-            'onboardingData' => $onboardingData,
+            'dataType' => $dataType,
         ]);
     }
 
@@ -123,9 +150,7 @@ class WidgetSelectionController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        // Mark edit_file_widgets step as completed
-        $user = Auth::user();
-        OnboardingService::markStepCompleted($user, 'edit_file_widgets');
+
 
         return response()->json([
             'success' => true,
@@ -244,10 +269,6 @@ class WidgetSelectionController extends Controller
                 'widget_type' => $widgetConnection->widget_type
             ]);
 
-            // Mark edit_file_widgets step as completed
-            $user = Auth::user();
-            OnboardingService::markStepCompleted($user, 'edit_file_widgets');
-
             return response()->json([
                 'success' => true,
                 'widget_name' => $widgetName,
@@ -320,10 +341,6 @@ class WidgetSelectionController extends Controller
                 'widget_name' => $widgetName,
                 'widget_type' => $widgetConnection->widget_type
             ]);
-
-            // Mark edit_file_widgets step as completed
-            $user = Auth::user();
-            OnboardingService::markStepCompleted($user, 'edit_file_widgets');
 
             return response()->json([
                 'success' => true,

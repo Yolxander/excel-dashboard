@@ -55,6 +55,19 @@ interface FileWidgetConnection {
     updated_at: string;
 }
 
+interface DashboardWidget {
+    id: number;
+    user_id: number;
+    widget_name: string;
+    widget_type: string;
+    widget_config?: any;
+    data_type: 'raw' | 'ai';
+    is_displayed: boolean;
+    display_order: number;
+    created_at: string;
+    updated_at: string;
+}
+
 interface DashboardProps {
     stats: {
         totalSales: number;
@@ -79,8 +92,8 @@ interface DashboardProps {
     tableData?: Array<any>;
     availableColumns?: string[];
     dataType?: 'ai' | 'raw';
-    displayedWidgets?: FileWidgetConnection[];
-    onboardingData?: any;
+    displayedWidgets?: (FileWidgetConnection | DashboardWidget)[];
+
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
@@ -94,8 +107,7 @@ export default function Dashboard({
     tableData,
     availableColumns,
     dataType = 'raw',
-    displayedWidgets = [],
-    onboardingData
+    displayedWidgets = []
 }: DashboardProps) {
     const [showDataNotification, setShowDataNotification] = React.useState(false);
     const [activeFilters, setActiveFilters] = React.useState<Record<string, string>>({});
@@ -141,46 +153,36 @@ export default function Dashboard({
         setIsUpdating(true);
 
         try {
-            // Get the active file ID from the current connected file
-            if (!connectedFile) {
-                setToastMessage({ type: 'error', message: 'No connected file found' });
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                setToastMessage({ type: 'error', message: 'CSRF token not found. Please refresh the page.' });
                 return;
             }
 
+            // Call the backend to get the correct widgets for this data type
             const endpoint = dataType === 'ai'
-                ? `/ai/analyze-file/current`
-                : `/dashboard/update-raw-data/current`;
+                ? `/dashboard?dataType=ai`
+                : `/dashboard?dataType=raw`;
 
             const response = await fetch(endpoint, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
                 },
             });
 
-            const data = await response.json();
-
-            if (data.success) {
-                setCurrentDataType(dataType);
-                setToastMessage({
-                    type: 'success',
-                    message: `Switched to ${dataType === 'ai' ? 'AI analysis' : 'raw data'}!`
-                });
-
-                // Clear session storage to allow fresh notifications after switch
-                sessionStorage.removeItem('ai_insights_shown');
-                sessionStorage.removeItem('data_notification_shown');
-
-                // Refresh the page to show updated data
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                setToastMessage({ type: 'error', message: data.message || 'Failed to update dashboard' });
+            if (!response.ok) {
+                setToastMessage({ type: 'error', message: 'Failed to switch data type' });
+                return;
             }
+
+            // Reload the page to get the updated data
+            window.location.href = endpoint;
+
         } catch (error) {
-            setToastMessage({ type: 'error', message: 'Network error occurred' });
+            setToastMessage({ type: 'error', message: 'Failed to switch data type' });
         } finally {
             setIsUpdating(false);
         }
@@ -316,7 +318,17 @@ export default function Dashboard({
         }
     };
 
-    const getWidgetValue = (widget: FileWidgetConnection) => {
+    const getWidgetValue = (widget: FileWidgetConnection | DashboardWidget) => {
+        // Handle DashboardWidget (raw data widgets)
+        if ('data_type' in widget) {
+            const config = widget.widget_config;
+            if (config && config.value) {
+                return config.value.toString();
+            }
+            return '0';
+        }
+
+        // Handle FileWidgetConnection (AI widgets)
         const aiInsights = widget.ai_insights;
         if (!aiInsights) return '0';
 
@@ -332,7 +344,17 @@ export default function Dashboard({
         }
     };
 
-    const getWidgetDescription = (widget: FileWidgetConnection) => {
+    const getWidgetDescription = (widget: FileWidgetConnection | DashboardWidget) => {
+        // Handle DashboardWidget (raw data widgets)
+        if ('data_type' in widget) {
+            const config = widget.widget_config;
+            if (config && config.description) {
+                return config.description;
+            }
+            return 'Raw data metric';
+        }
+
+        // Handle FileWidgetConnection (AI widgets)
         const aiInsights = widget.ai_insights;
         if (aiInsights?.description) {
             return aiInsights.description;
@@ -350,12 +372,18 @@ export default function Dashboard({
         }
     };
 
-    const getWidgetTrend = (widget: FileWidgetConnection) => {
+    const getWidgetTrend = (widget: FileWidgetConnection | DashboardWidget) => {
+        // Handle DashboardWidget (raw data widgets)
+        if ('data_type' in widget) {
+            return '+0%'; // Raw data widgets don't have trends
+        }
+
+        // Handle FileWidgetConnection (AI widgets)
         const aiInsights = widget.ai_insights;
         return aiInsights?.trend || '+0%';
     };
 
-    // Create KPI cards from displayed widgets
+    // Create KPI cards from displayed widgets (already filtered by backend)
     const kpiCards = displayedWidgets
         .filter(widget => widget.widget_type === 'kpi')
         .map(widget => ({
@@ -365,8 +393,8 @@ export default function Dashboard({
             description: getWidgetDescription(widget),
             trend: getWidgetTrend(widget),
             trendUp: true,
-            aiSource: widget.ai_insights?.source_column,
-            aiMethod: widget.ai_insights?.calculation_method,
+            aiSource: 'data_type' in widget ? null : widget.ai_insights?.source_column,
+            aiMethod: 'data_type' in widget ? null : widget.ai_insights?.calculation_method,
         }));
 
     // Chart configurations for shadcn
@@ -550,7 +578,8 @@ export default function Dashboard({
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {kpiCards.map((kpi, index) => (
+                {kpiCards.length > 0 ? (
+                    kpiCards.map((kpi, index) => (
                     <Card key={index}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-gray-600">
@@ -587,16 +616,46 @@ export default function Dashboard({
                             )}
                         </CardContent>
                     </Card>
-                ))}
+                ))
+                ) : (
+                    <div className="col-span-full">
+                        <Card>
+                            <CardContent className="pt-6">
+                                <div className="text-center py-8">
+                                    <DatabaseIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                                                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                        No widgets available for {currentDataType === 'ai' ? 'AI Analysis' : 'Raw Data'} view
+                                    </h3>
+                                    <p className="text-gray-500 mb-4">
+                                        {currentDataType === 'ai'
+                                            ? 'Switch to Raw Data view or create AI-powered widgets in the Widget Selection page.'
+                                            : 'Switch to AI Analysis view or create raw data widgets in the Widget Selection page.'
+                                        }
+                                    </p>
+                                    <Link href="/widget-selection">
+                                        <Button variant="outline">
+                                            <Settings className="h-4 w-4 mr-2" />
+                                            Go to Widget Selection
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
             </div>
 
 
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {displayedWidgets
-                    .filter(widget => widget.widget_type === 'bar_chart' || widget.widget_type === 'pie_chart')
-                    .map((widget, index) => (
+                {(() => {
+                    const filteredWidgets = displayedWidgets.filter(widget =>
+                        widget.widget_type === 'bar_chart' || widget.widget_type === 'pie_chart'
+                    );
+
+                    return filteredWidgets.length > 0 ? (
+                        filteredWidgets.map((widget, index) => (
                         <Card key={widget.id}>
                             <CardHeader>
                                 <CardTitle className="flex items-center">
@@ -686,7 +745,34 @@ export default function Dashboard({
                                 )}
                             </CardContent>
                         </Card>
-                    ))}
+                    ))
+                    ) : (
+                        <div className="col-span-full">
+                            <Card>
+                                <CardContent className="pt-6">
+                                    <div className="text-center py-8">
+                                        <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                                                                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                            No charts available for {currentDataType === 'ai' ? 'AI Analysis' : 'Raw Data'} view
+                                        </h3>
+                                        <p className="text-gray-500 mb-4">
+                                            {currentDataType === 'ai'
+                                                ? 'Switch to Raw Data view or create AI-powered charts in the Widget Selection page.'
+                                                : 'Switch to AI Analysis view or create raw data charts in the Widget Selection page.'
+                                            }
+                                        </p>
+                                        <Link href="/widget-selection">
+                                            <Button variant="outline">
+                                                <Settings className="h-4 w-4 mr-2" />
+                                                Go to Widget Selection
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* Filters */}
@@ -850,7 +936,7 @@ export default function Dashboard({
                 isUpdating={isUpdating}
                 currentDataType={currentDataType}
                 showEditButton={!!connectedFile}
-                onboardingData={onboardingData}
+
             >
                 {(showDataNotification || toastMessage) && (
                     <div className="fixed bottom-4 right-4 z-50 p-4 border rounded-lg shadow-lg max-w-sm">

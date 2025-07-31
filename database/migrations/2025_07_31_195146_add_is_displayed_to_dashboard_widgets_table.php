@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->boolean('onboarding_congratulations_shown')->default(false);
+        Schema::table('dashboard_widgets', function (Blueprint $table) {
+            $table->boolean('is_displayed')->default(false)->after('is_active');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('onboarding_congratulations_shown');
+        Schema::table('dashboard_widgets', function (Blueprint $table) {
+            $table->dropColumn('is_displayed');
         });
     }
 };

@@ -84,10 +84,10 @@ interface PreviewData {
 interface CombineFilesProps {
     uploadedFiles: UploadedFile[];
     connectedWidgets: DashboardWidget[];
-    onboardingData?: any;
+
 }
 
-export default function CombineFiles({ uploadedFiles, connectedWidgets, onboardingData }: CombineFilesProps) {
+export default function CombineFiles({ uploadedFiles, connectedWidgets }: CombineFilesProps) {
     const [selectedFiles, setSelectedFiles] = useState<UploadedFile[]>([]);
     const [isCombining, setIsCombining] = useState(false);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
@@ -274,7 +274,7 @@ export default function CombineFiles({ uploadedFiles, connectedWidgets, onboardi
         <DashboardLayout
             title="Combine Files"
             description="AI-powered file combination with intelligent insights and preview"
-            onboardingData={onboardingData}
+
         >
             <Head title="Combine Files" />
 

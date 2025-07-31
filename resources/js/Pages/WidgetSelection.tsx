@@ -66,15 +66,14 @@ interface WidgetSelectionProps {
     currentFile: UploadedFile | null;
     availableWidgets: FileWidgetConnection[];
     displayedWidgets: FileWidgetConnection[];
-    onboardingData?: any;
+
 }
 
 export default function WidgetSelection({
     uploadedFiles,
     currentFile,
     availableWidgets,
-    displayedWidgets,
-    onboardingData
+    displayedWidgets
 }: WidgetSelectionProps) {
     const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(currentFile);
     const [widgets, setWidgets] = useState<FileWidgetConnection[]>(availableWidgets);
@@ -444,7 +443,7 @@ export default function WidgetSelection({
             <DashboardLayout
                 title="Widget Selection"
                 description="Customize and manage your dashboard widgets"
-                onboardingData={onboardingData}
+    
             >
                 <div className="space-y-6">
                     {/* Back to Dashboard Button */}

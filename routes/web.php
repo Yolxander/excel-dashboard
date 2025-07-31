@@ -9,7 +9,7 @@ use App\Http\Controllers\CombineFilesController;
 use App\Http\Controllers\DataSourcesController;
 use App\Http\Controllers\SyncScheduleController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\OnboardingController;
+
 use App\Http\Controllers\ProfileController;
 
 // Welcome page (public)
@@ -56,18 +56,13 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // AI Analysis Routes (protected)
 Route::middleware(['auth'])->group(function () {
     Route::post('/ai/analyze-file/{fileId}', [ConnectedFilesController::class, 'analyzeFileWithAI']);
-    Route::post('/ai/analyze-file/current', [DashboardController::class, 'analyzeCurrentFileWithAI']);
+    Route::post('/ai/analyze-file/current', [DashboardController::class, 'regenerateAIInsights']);
     Route::get('/ai/widget-insights/{widgetId}', [ConnectedFilesController::class, 'getWidgetInsights']);
 
     // Dashboard Update Routes
     Route::post('/dashboard/update-raw-data/current', [DashboardController::class, 'updateWithRawData']);
 
-    // Onboarding Routes
-    Route::get('/onboarding/data', [OnboardingController::class, 'getOnboardingData']);
-    Route::post('/onboarding/mark-step', [OnboardingController::class, 'markStepCompleted']);
-    Route::post('/onboarding/check-progress', [OnboardingController::class, 'checkProgress']);
-    Route::post('/onboarding/mark-congratulations-shown', [OnboardingController::class, 'markCongratulationsShown']);
-    Route::post('/onboarding/reset-congratulations', [OnboardingController::class, 'resetCongratulationsStatus']);
+    
 });
 
 Route::get('/widget-selection', [App\Http\Controllers\WidgetSelectionController::class, 'index'])->name('widget-selection');

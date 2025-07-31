@@ -6,18 +6,19 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\UploadedFile;
 use App\Models\FileWidgetConnection;
+use App\Models\DashboardWidget;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Services\AIService;
-use App\Services\OnboardingService;
+
 use App\Services\RawDataService;
 
 class DashboardController extends Controller
 {
-        public function index()
+        public function index(Request $request)
     {
-        // Get the currently displayed widgets
-        $displayedWidgets = FileWidgetConnection::with('uploadedFile')
+        // Get the currently displayed widgets from FileWidgetConnection (AI widgets)
+        $fileWidgetConnections = FileWidgetConnection::with('uploadedFile')
             ->whereHas('uploadedFile', function($query) {
                 $query->where('user_id', Auth::id());
             })
@@ -28,6 +29,15 @@ class DashboardController extends Controller
             })
             ->orderBy('display_order')
             ->get();
+
+        // Get the currently displayed widgets from DashboardWidget (Raw data widgets)
+        $dashboardWidgets = DashboardWidget::where('user_id', Auth::id())
+            ->where('is_displayed', true)
+            ->orderBy('display_order')
+            ->get();
+
+        // Combine both widget collections
+        $displayedWidgets = $fileWidgetConnections->concat($dashboardWidgets);
 
         $connectedFile = null;
         $stats = [];
@@ -70,9 +80,36 @@ class DashboardController extends Controller
             $connectedFile = null;
         }
 
-        // Get onboarding data
-        $user = Auth::user();
-        $onboardingData = OnboardingService::getOnboardingData($user);
+
+
+        // Determine data type based on query parameter or actual widgets
+        $dataType = $request->query('dataType', 'raw'); // Get from query parameter or default to 'raw'
+
+        // If no query parameter, determine from widgets
+        if (!$request->has('dataType')) {
+            if ($displayedWidgets->isNotEmpty()) {
+                // Check if any widget has AI data type
+                $hasAIData = $displayedWidgets->contains('data_type', 'ai');
+                $dataType = $hasAIData ? 'ai' : 'raw';
+            }
+
+            // If we have raw data widgets, prioritize them
+            if ($dashboardWidgets->isNotEmpty()) {
+                $dataType = 'raw';
+            }
+        }
+
+        // Filter widgets based on data type
+        $filteredWidgets = $displayedWidgets->filter(function($widget) use ($dataType) {
+            if ($widget instanceof \App\Models\FileWidgetConnection) {
+                // FileWidgetConnection widgets are AI widgets
+                return $dataType === 'ai';
+            } elseif ($widget instanceof \App\Models\DashboardWidget) {
+                // DashboardWidget widgets have data_type field
+                return $widget->data_type === $dataType;
+            }
+            return false;
+        })->values(); // Convert to array and re-index
 
         $props = [
             'stats' => $stats,
@@ -81,12 +118,11 @@ class DashboardController extends Controller
             'chartTitles' => $aiInsights ? $this->getChartTitles($aiInsights) : null,
             'chartDescriptions' => $aiInsights ? $this->getChartDescriptions($aiInsights) : null,
             'tableData' => $tableData,
-            'dataType' => $aiInsights && isset($aiInsights['widget_insights']) ? 'ai' : 'raw',
+            'dataType' => $dataType,
             'availableColumns' => $displayedWidgets->isNotEmpty() && $displayedWidgets->first()->uploadedFile && $displayedWidgets->first()->uploadedFile->processed_data
                 ? $displayedWidgets->first()->uploadedFile->processed_data['headers'] ?? []
                 : [],
-            'displayedWidgets' => $displayedWidgets,
-            'onboardingData' => $onboardingData,
+            'displayedWidgets' => $filteredWidgets,
         ];
 
         return Inertia::render('Dashboard', $props);
@@ -438,7 +474,7 @@ class DashboardController extends Controller
             $headerLower = strtolower($header);
             foreach ($valueColumns as $valueCol) {
                 if ($headerLower === $valueCol) {
-    
+
                     return $header;
                 }
             }
@@ -449,7 +485,7 @@ class DashboardController extends Controller
             $headerLower = strtolower($header);
             foreach ($valueColumns as $valueCol) {
                 if (strpos($headerLower, $valueCol) !== false && $headerLower !== 'salesperson') {
-    
+
                     return $header;
                 }
             }
@@ -610,10 +646,18 @@ class DashboardController extends Controller
 
     public function regenerateAIInsights(Request $request)
     {
+        $userId = Auth::id();
+
+        // Debug: Check if user has any files
+        $totalFiles = UploadedFile::where('user_id', $userId)->count();
+        $completedFiles = UploadedFile::where('user_id', $userId)->where('status', 'completed')->count();
+
+        Log::info("User {$userId} has {$totalFiles} total files and {$completedFiles} completed files");
+
         // Get the most recently connected file from dashboard widgets
         $activeWidget = FileWidgetConnection::with('uploadedFile')
-            ->whereHas('uploadedFile', function($query) {
-                $query->where('user_id', Auth::id());
+            ->whereHas('uploadedFile', function($query) use ($userId) {
+                $query->where('user_id', $userId);
             })
             ->where('is_displayed', true)
             ->whereNotNull('uploaded_file_id')
@@ -623,10 +667,51 @@ class DashboardController extends Controller
             ->orderBy('updated_at', 'desc')
             ->first();
 
+        Log::info("Found active widget: " . ($activeWidget ? 'yes' : 'no'));
+
+        // If no FileWidgetConnection found, try to get from DashboardWidget
+        if (!$activeWidget) {
+            $dashboardWidget = DashboardWidget::where('user_id', $userId)
+                ->where('is_displayed', true)
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            Log::info("Found dashboard widget: " . ($dashboardWidget ? 'yes' : 'no'));
+
+            if ($dashboardWidget) {
+                // For dashboard widgets, we need to find the associated file
+                $uploadedFile = UploadedFile::where('user_id', $userId)
+                    ->where('status', 'completed')
+                    ->orderBy('updated_at', 'desc')
+                    ->first();
+
+                Log::info("Found uploaded file for dashboard widget: " . ($uploadedFile ? 'yes' : 'no'));
+
+                if ($uploadedFile) {
+                    $activeWidget = (object) ['uploadedFile' => $uploadedFile];
+                }
+            }
+        }
+
+        // If still no active widget, try to get any completed file for the user
+        if (!$activeWidget) {
+            $uploadedFile = UploadedFile::where('user_id', $userId)
+                ->where('status', 'completed')
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            Log::info("Found fallback uploaded file: " . ($uploadedFile ? 'yes' : 'no'));
+
+            if ($uploadedFile) {
+                $activeWidget = (object) ['uploadedFile' => $uploadedFile];
+            }
+        }
+
         if (!$activeWidget || !$activeWidget->uploadedFile) {
+            Log::error("No active widget or uploaded file found for user {$userId}");
             return response()->json([
                 'success' => false,
-                'message' => 'No connected file found'
+                'message' => 'No connected file found. Please upload and connect a file first.'
             ], 404);
         }
 
@@ -656,12 +741,43 @@ class DashboardController extends Controller
         }
     }
 
+    public function testDebug(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+            $totalFiles = UploadedFile::where('user_id', $userId)->count();
+            $completedFiles = UploadedFile::where('user_id', $userId)->where('status', 'completed')->count();
+
+            return response()->json([
+                'success' => true,
+                'userId' => $userId,
+                'totalFiles' => $totalFiles,
+                'completedFiles' => $completedFiles,
+                'message' => 'Debug test successful'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
     public function updateWithRawData(Request $request)
     {
+        $userId = Auth::id();
+
+        // Debug: Check if user has any files
+        $totalFiles = UploadedFile::where('user_id', $userId)->count();
+        $completedFiles = UploadedFile::where('user_id', $userId)->where('status', 'completed')->count();
+
+        Log::info("User {$userId} has {$totalFiles} total files and {$completedFiles} completed files");
+
         // Get the most recently connected file from dashboard widgets
         $activeWidget = FileWidgetConnection::with('uploadedFile')
-            ->whereHas('uploadedFile', function($query) {
-                $query->where('user_id', Auth::id());
+            ->whereHas('uploadedFile', function($query) use ($userId) {
+                $query->where('user_id', $userId);
             })
             ->where('is_displayed', true)
             ->whereNotNull('uploaded_file_id')
@@ -671,10 +787,51 @@ class DashboardController extends Controller
             ->orderBy('updated_at', 'desc')
             ->first();
 
+        Log::info("Found active widget: " . ($activeWidget ? 'yes' : 'no'));
+
+        // If no FileWidgetConnection found, try to get from DashboardWidget
+        if (!$activeWidget) {
+            $dashboardWidget = DashboardWidget::where('user_id', $userId)
+                ->where('is_displayed', true)
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            Log::info("Found dashboard widget: " . ($dashboardWidget ? 'yes' : 'no'));
+
+            if ($dashboardWidget) {
+                // For dashboard widgets, we need to find the associated file
+                $uploadedFile = UploadedFile::where('user_id', $userId)
+                    ->where('status', 'completed')
+                    ->orderBy('updated_at', 'desc')
+                    ->first();
+
+                Log::info("Found uploaded file for dashboard widget: " . ($uploadedFile ? 'yes' : 'no'));
+
+                if ($uploadedFile) {
+                    $activeWidget = (object) ['uploadedFile' => $uploadedFile];
+                }
+            }
+        }
+
+        // If still no active widget, try to get any completed file for the user
+        if (!$activeWidget) {
+            $uploadedFile = UploadedFile::where('user_id', $userId)
+                ->where('status', 'completed')
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            Log::info("Found fallback uploaded file: " . ($uploadedFile ? 'yes' : 'no'));
+
+            if ($uploadedFile) {
+                $activeWidget = (object) ['uploadedFile' => $uploadedFile];
+            }
+        }
+
         if (!$activeWidget || !$activeWidget->uploadedFile) {
+            Log::error("No active widget or uploaded file found for user {$userId}");
             return response()->json([
                 'success' => false,
-                'message' => 'No connected file found'
+                'message' => 'No connected file found. Please upload and connect a file first.'
             ], 404);
         }
 
@@ -684,10 +841,10 @@ class DashboardController extends Controller
 
             // Use RawDataService to generate widgets and get data
             $rawDataService = new RawDataService();
-            
+
             // Generate raw data widgets (4 KPI widgets + 2 charts)
             $widgetResult = $rawDataService->generateRawDataWidgets($file, $userId);
-            
+
             if (!$widgetResult['success']) {
                 return response()->json([
                     'success' => false,
@@ -697,7 +854,7 @@ class DashboardController extends Controller
 
             // Get raw data for dashboard display
             $dataResult = $rawDataService->getRawDataForDashboard($file);
-            
+
             if (!$dataResult['success']) {
                 return response()->json([
                     'success' => false,

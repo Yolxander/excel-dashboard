@@ -24,6 +24,7 @@ class DashboardWidget extends Model
     protected $casts = [
         'widget_config' => 'array',
         'is_active' => 'boolean',
+        'is_displayed' => 'boolean',
     ];
 
     public function user()

@@ -1,14 +1,51 @@
-import type React from "react"
+import React from "react"
 import { Head, Link } from '@inertiajs/react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from "@/components/ui/badge"
 import { FileText, Shield, Copyright, MessageSquare, Scale, AlertTriangle, Users, Lock, CheckCircle, ArrowRight, HelpCircle, Globe, Settings, Mail, Phone, MapPin, Database, Eye, Edit, Trash2, Download, Settings as SettingsIcon } from "lucide-react"
-import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
+
 
 export default function PrivacyPolicyPage() {
-  const heroRef = useIntersectionObserver({ threshold: 0.3 })
-  const contentRef = useIntersectionObserver({ threshold: 0.2 })
+  const [activeSection, setActiveSection] = React.useState('information-collected')
+
+  // Scroll tracking effect
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const sections = [
+        'information-collected',
+        'how-collected',
+        'why-collected',
+        'protection',
+        'consent',
+        'third-parties',
+        'cookies',
+        'access-correction',
+        'changes',
+        'contact'
+      ]
+
+      const scrollPosition = window.scrollY + 200 // Offset for header
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const element = document.getElementById(sections[i])
+        if (element && element.offsetTop <= scrollPosition) {
+          setActiveSection(sections[i])
+          break
+        }
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
 
   return (
     <>
@@ -54,99 +91,138 @@ export default function PrivacyPolicyPage() {
 
           {/* Hero Section */}
           <main className="container mx-auto px-4 py-12 md:py-20">
-            <div
-              ref={heroRef.ref}
-              className={`text-center max-w-7xl mx-auto transition-all duration-1000 ease-out ${
-                heroRef.hasTriggered
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-8'
-              }`}
-            >
-              <h1 className={`text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight transition-all duration-700 delay-200 ${
-                heroRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}>
+            <div className="text-center max-w-7xl mx-auto">
+              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
                 Privacy Policy
               </h1>
 
-              <p className={`text-lg md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto transition-all duration-700 delay-400 ${
-                heroRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}>
-                Xcel Dashboard ("we", "our", "us") is committed to protecting your privacy and ensuring your data is secure. Our practices comply fully with the Personal Information Protection and Electronic Documents Act (PIPEDA).
+              <p className="text-lg md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+                Please read our privacy policy carefully to understand how we collect, use, and protect your information.
               </p>
-
-              {/* Last Updated */}
-              <div
-                className={`mb-8 transition-all duration-700 delay-600 ${
-                  heroRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
-              >
-                <Badge variant="outline" className="text-sm">
-                  Last Updated: July 30, 2025
-                </Badge>
-              </div>
             </div>
           </main>
 
           {/* Two Column Layout */}
-          <section
-            ref={contentRef.ref}
-            className={`container mx-auto px-4 py-12 md:py-20 transition-all duration-1000 ease-out ${
-              contentRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}
-          >
+          <section className="container mx-auto px-4 py-8">
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Left Column - Navigation */}
-              <div className={`lg:w-1/3 transition-all duration-700 delay-200 ${
-                contentRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
-              }`}>
+              <div className="lg:w-1/3">
                 <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50 sticky top-8">
                   <CardHeader>
                     <CardTitle className="text-lg font-bold text-gray-900">Table of Contents</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <nav className="space-y-2">
-                      <a href="#information-collected" className="block p-3 rounded-lg bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors">
+                      <button
+                        onClick={() => scrollToSection('information-collected')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'information-collected'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         1. What Information Do We Collect?
-                      </a>
-                      <a href="#how-collected" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('how-collected')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'how-collected'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         2. How Do We Collect Your Information?
-                      </a>
-                      <a href="#why-collected" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('why-collected')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'why-collected'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         3. Why Do We Collect Your Information?
-                      </a>
-                      <a href="#protection" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('protection')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'protection'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         4. How Is Your Information Protected?
-                      </a>
-                      <a href="#consent" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('consent')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'consent'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         5. Consent
-                      </a>
-                      <a href="#third-parties" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('third-parties')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'third-parties'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         6. Disclosure to Third Parties
-                      </a>
-                      <a href="#cookies" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('cookies')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'cookies'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         7. Cookies & Tracking
-                      </a>
-                      <a href="#access-correction" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('access-correction')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'access-correction'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         8. Access and Correction
-                      </a>
-                      <a href="#changes" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('changes')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'changes'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         9. Changes to This Policy
-                      </a>
-                      <a href="#contact" className="block p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                      </button>
+                      <button
+                        onClick={() => scrollToSection('contact')}
+                        className={`block w-full text-left p-3 rounded-lg transition-colors ${
+                          activeSection === 'contact'
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
                         10. Questions & Contact
-                      </a>
+                      </button>
                     </nav>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Right Column - Content */}
-              <div className={`lg:w-2/3 transition-all duration-700 delay-400 ${
-                contentRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
-              }`}>
+              <div className="lg:w-2/3">
                 <div className="space-y-8">
                   {/* Section 1: What Information Do We Collect? */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="information-collected" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">1.</span>
@@ -183,7 +259,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 2: How Do We Collect Your Information? */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="how-collected" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">2.</span>
@@ -216,7 +292,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 3: Why Do We Collect Your Information? */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="why-collected" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">3.</span>
@@ -257,7 +333,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 4: How Is Your Information Protected? */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="protection" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">4.</span>
@@ -290,7 +366,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 5: Consent */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="consent" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">5.</span>
@@ -310,7 +386,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 6: Disclosure to Third Parties */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="third-parties" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">6.</span>
@@ -343,7 +419,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 7: Cookies & Tracking */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="cookies" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">7.</span>
@@ -377,7 +453,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 8: Access and Correction */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="access-correction" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">8.</span>
@@ -415,7 +491,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 9: Changes to This Policy */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="changes" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">9.</span>
@@ -435,7 +511,7 @@ export default function PrivacyPolicyPage() {
                   </Card>
 
                   {/* Section 10: Questions & Contact */}
-                  <Card className="bg-white rounded-xl shadow-lg border border-gray-100/50">
+                  <Card id="contact" className="bg-white rounded-xl shadow-lg border border-gray-100/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         <span className="text-blue-600">10.</span>

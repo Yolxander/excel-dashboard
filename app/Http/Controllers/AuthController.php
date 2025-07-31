@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use App\Services\OnboardingService;
+
 
 class AuthController extends Controller
 {
@@ -53,8 +53,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Initialize onboarding steps for new user
-        OnboardingService::initializeOnboardingSteps($user);
+
 
         Auth::login($user);
 
