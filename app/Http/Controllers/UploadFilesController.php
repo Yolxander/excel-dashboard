@@ -22,13 +22,31 @@ class UploadFilesController extends Controller
             'timestamp' => now()->toISOString()
         ]);
 
+        // Use pagination to prevent memory issues with large datasets
+        // Only select necessary columns to reduce memory usage
         $uploadedFiles = UploadedFile::where('user_id', Auth::id())
+            ->select([
+                'id', 
+                'filename', 
+                'original_filename', 
+                'file_type', 
+                'file_size', 
+                'status', 
+                'created_at', 
+                'is_encrypted',
+                'processed_data',
+                'error_message'
+            ])
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(50); // Limit to 50 files per page
 
-        Log::info('Retrieved uploaded files for user', [
+        Log::info('Retrieved uploaded files for user with pagination', [
             'user_id' => Auth::id(),
-            'file_count' => $uploadedFiles->count()
+            'total_files' => $uploadedFiles->total(),
+            'current_page' => $uploadedFiles->currentPage(),
+            'per_page' => $uploadedFiles->perPage(),
+            'files_on_current_page' => $uploadedFiles->count(),
+            'memory_usage' => memory_get_usage(true) / 1024 / 1024 . ' MB'
         ]);
 
         // Get onboarding data

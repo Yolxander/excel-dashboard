@@ -36,8 +36,28 @@ interface UploadedFile {
     formatted_file_size?: string;
 }
 
+interface PaginationData {
+    current_page: number;
+    data: UploadedFile[];
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+}
+
 interface UploadFilesProps {
-    uploadedFiles: UploadedFile[];
+    uploadedFiles: PaginationData;
     success?: string;
     error?: string;
     onboardingData?: any;
@@ -381,50 +401,102 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                             <CardDescription>Files that have been processed</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {uploadedFiles.length === 0 ? (
+                            {uploadedFiles.data.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">
                                     <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                                     <p>No files uploaded yet</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {uploadedFiles.map((file) => (
-                                        <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                            <div className="flex items-center space-x-4">
-                                                {getFileIcon(file.file_type)}
-                                                <div>
-                                                    <p className="font-medium">{file.original_filename}</p>
-                                                    <p className="text-sm text-gray-500">
-                                                        {file.file_size ? `${(file.file_size / 1024).toFixed(1)} KB` : 'Unknown size'} •
-                                                        Uploaded {new Date(file.created_at).toLocaleDateString()}
-                                                        {file.processed_data && (
-                                                            <span> • {file.processed_data.total_rows} rows, {file.processed_data.total_columns} columns</span>
+                                <>
+                                    <div className="space-y-4">
+                                        {uploadedFiles.data.map((file) => (
+                                            <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                                <div className="flex items-center space-x-4">
+                                                    {getFileIcon(file.file_type)}
+                                                    <div>
+                                                        <p className="font-medium">{file.original_filename}</p>
+                                                        <p className="text-sm text-gray-500">
+                                                            {file.file_size ? `${(file.file_size / 1024).toFixed(1)} KB` : 'Unknown size'} •
+                                                            Uploaded {new Date(file.created_at).toLocaleDateString()}
+                                                            {file.processed_data && (
+                                                                <span> • {file.processed_data.total_rows} rows, {file.processed_data.total_columns} columns</span>
+                                                            )}
+                                                        </p>
+                                                        {file.error_message && (
+                                                            <p className="text-sm text-red-500 mt-1">{file.error_message}</p>
                                                         )}
-                                                    </p>
-                                                    {file.error_message && (
-                                                        <p className="text-sm text-red-500 mt-1">{file.error_message}</p>
-                                                    )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    {getStatusBadge(file.status)}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDeleteClick(file.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Pagination */}
+                                    {uploadedFiles.last_page > 1 && (
+                                        <div className="mt-6 flex items-center justify-between">
+                                            <div className="text-sm text-gray-700">
+                                                Showing {uploadedFiles.from} to {uploadedFiles.to} of {uploadedFiles.total} files
+                                            </div>
                                             <div className="flex items-center space-x-2">
-                                                {getStatusBadge(file.status)}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleDeleteClick(file.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                {uploadedFiles.prev_page_url && (
+                                                    <Link href={uploadedFiles.prev_page_url}>
+                                                        <Button variant="outline" size="sm">
+                                                            Previous
+                                                        </Button>
+                                                    </Link>
+                                                )}
+                                                
+                                                <div className="flex items-center space-x-1">
+                                                    {uploadedFiles.links.map((link, index) => {
+                                                        if (link.url === null) {
+                                                            return (
+                                                                <span key={index} className="px-3 py-2 text-sm text-gray-500">
+                                                                    {link.label}
+                                                                </span>
+                                                            );
+                                                        }
+                                                        
+                                                        return (
+                                                            <Link key={index} href={link.url}>
+                                                                <Button
+                                                                    variant={link.active ? "default" : "outline"}
+                                                                    size="sm"
+                                                                    className="min-w-[40px]"
+                                                                >
+                                                                    {link.label}
+                                                                </Button>
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                                
+                                                {uploadedFiles.next_page_url && (
+                                                    <Link href={uploadedFiles.next_page_url}>
+                                                        <Button variant="outline" size="sm">
+                                                            Next
+                                                        </Button>
+                                                    </Link>
+                                                )}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
+                                    )}
+                                </>
                             )}
                         </CardContent>
                     </Card>
 
                     {/* Processing Status */}
-                    {uploadedFiles.some(f => f.status === 'processing') && (
+                    {uploadedFiles.data.some(f => f.status === 'processing') && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Processing Status</CardTitle>
@@ -432,7 +504,7 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {uploadedFiles
+                                    {uploadedFiles.data
                                         .filter(f => f.status === 'processing')
                                         .map((file) => (
                                             <div key={file.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
