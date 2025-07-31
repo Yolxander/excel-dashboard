@@ -13,7 +13,8 @@ import {
     Database as DatabaseIcon,
     Sparkles,
     LogOut,
-    Edit
+    Edit,
+    Shield
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
 import OnboardingChecklist from '@/components/ui/onboarding-checklist';
@@ -54,6 +55,12 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                 { id: 'combine', label: 'Combine Files', icon: LinkIcon, href: '/combine-files' },
                 // { id: 'sources', label: 'Data Sources', icon: Database, href: '/data-sources' },
                 // { id: 'schedule', label: 'Sync Schedule', icon: Clock, href: '/sync-schedule' }
+            ]
+        },
+        {
+            section: 'Security & Support',
+            items: [
+                { id: 'security-privacy', label: 'Security & Privacy', icon: Shield, href: '/security-privacy' }
             ]
         }
     ];
@@ -178,6 +185,26 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {children}
                 </main>
+
+                {/* Footer */}
+                <footer className="bg-white border-t mt-8">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                            <div className="flex items-center space-x-4">
+                                <span>© 2024 Excel Dashboard. All rights reserved.</span>
+                                <Link
+                                    href="/privacy-policy"
+                                    className="text-blue-600 hover:text-blue-800 underline"
+                                >
+                                    Privacy Policy
+                                </Link>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <span className="text-xs">🔒 Secure & Encrypted</span>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
             </div>
 
             {/* Onboarding Checklist */}

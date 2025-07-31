@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UploadFilesController;
 use App\Http\Controllers\ConnectedFilesController;
@@ -67,3 +68,13 @@ Route::post('/ai/create-widget', [App\Http\Controllers\WidgetSelectionController
 Route::post('/widget-selection/create-manual-widget', [App\Http\Controllers\WidgetSelectionController::class, 'createManualWidget'])->name('widget-selection.create-manual-widget');
 Route::get('/widget-selection/suggestions/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetSuggestions'])->name('widget-selection.suggestions');
 Route::get('/widget-selection/function-options/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetFunctionOptions'])->name('widget-selection.function-options');
+
+// Privacy Policy Route
+Route::get('/privacy-policy', function () {
+    return Inertia::render('PrivacyPolicy');
+})->name('privacy-policy');
+
+// Security & Privacy Route
+Route::get('/security-privacy', function () {
+    return Inertia::render('SecurityPrivacy');
+})->name('security-privacy');

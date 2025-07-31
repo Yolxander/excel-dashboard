@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use App\Services\OnboardingService;
+use App\Services\FileEncryptionService;
 
 class UploadFilesController extends Controller
 {
@@ -42,28 +43,35 @@ class UploadFilesController extends Controller
             $file = $request->file('file');
             $originalName = $file->getClientOriginalName();
             $filename = time() . '_' . $originalName;
-            $filePath = $file->storeAs('uploads', $filename, 'public');
             $fileType = $file->getClientOriginalExtension();
+
+            // Encrypt and store the file
+            $encryptionService = new FileEncryptionService();
+            $encryptedFileData = $encryptionService->encryptAndStore($file, 'encrypted-files');
 
             $uploadedFile = UploadedFile::create([
                 'user_id' => Auth::id(),
                 'filename' => $filename,
+                'encrypted_filename' => $encryptedFileData['encrypted_filename'],
                 'original_filename' => $originalName,
-                'file_path' => $filePath,
+                'file_path' => $encryptedFileData['file_path'],
+                'encrypted_file_path' => $encryptedFileData['file_path'],
                 'file_type' => $fileType,
                 'file_size' => $file->getSize(),
                 'status' => 'processing',
+                'is_encrypted' => true,
+                'encryption_key_id' => 'app_key', // Using Laravel's app key for encryption
             ]);
 
-                    // Process the file immediately
-        $this->processExcelFile($uploadedFile);
+            // Process the file immediately
+            $this->processExcelFile($uploadedFile);
 
-        // Check onboarding progress after file upload
-        $user = Auth::user();
-        OnboardingService::checkAndMarkSteps($user);
+            // Check onboarding progress after file upload
+            $user = Auth::user();
+            OnboardingService::checkAndMarkSteps($user);
 
-        // Return a redirect to refresh the page with the new data
-        return redirect()->back()->with('success', 'File uploaded and processed successfully!');
+            // Return a redirect to refresh the page with the new data
+            return redirect()->back()->with('success', 'File uploaded, encrypted, and processed successfully!');
 
         } catch (\Exception $e) {
             Log::error('File upload failed: ' . $e->getMessage());
@@ -76,13 +84,14 @@ class UploadFilesController extends Controller
         try {
             Log::info('Processing file: ' . $uploadedFile->original_filename);
 
-            $filePath = Storage::disk('public')->path($uploadedFile->file_path);
+            // Decrypt the file for processing
+            $encryptionService = new FileEncryptionService();
+            $decryptedFile = $encryptionService->decryptAndRetrieve(
+                $uploadedFile->encrypted_file_path,
+                $uploadedFile->original_filename
+            );
 
-            if (!file_exists($filePath)) {
-                throw new \Exception('File not found at path: ' . $filePath);
-            }
-
-            $spreadsheet = IOFactory::load($filePath);
+            $spreadsheet = IOFactory::load($decryptedFile['temp_path']);
             $worksheet = $spreadsheet->getActiveSheet();
             $data = $worksheet->toArray();
 
@@ -146,8 +155,11 @@ class UploadFilesController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        // Delete the physical file
-        Storage::disk('public')->delete($file->file_path);
+        // Delete the encrypted file from S3
+        if ($file->is_encrypted && $file->encrypted_file_path) {
+            $encryptionService = new FileEncryptionService();
+            $encryptionService->deleteEncryptedFile($file->encrypted_file_path);
+        }
 
         // Delete the database record
         $file->delete();

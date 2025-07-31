@@ -3,9 +3,10 @@ import { Head, router, Link } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Plus, MoreHorizontal, Trash2, Download, Eye, RefreshCw } from 'lucide-react';
+import { Upload, FileText, Plus, MoreHorizontal, Trash2, Download, Eye, RefreshCw, Shield } from 'lucide-react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -275,6 +276,26 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                     </div>
                 </div>
                 <div className="space-y-6">
+                    {/* Security Notice */}
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Shield className="h-5 w-5 text-green-600" />
+                                    <div>
+                                        <h3 className="font-medium text-gray-900">🔒 Your files are encrypted and secure</h3>
+                                        <p className="text-sm text-gray-600">All uploaded files are encrypted with AES-256 and stored securely</p>
+                                    </div>
+                                </div>
+                                <Link href="/security-privacy">
+                                    <Button variant="outline" size="sm">
+                                        Learn More
+                                    </Button>
+                                </Link>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Upload Message */}
                     {uploadMessage && (
                         <div className={`p-4 rounded-lg ${
