@@ -18,6 +18,7 @@ import {
     User,
     ChevronDown
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Toaster } from '@/components/ui/toaster';
 
 import {
@@ -40,10 +41,11 @@ interface DashboardLayoutProps {
     isUpdating?: boolean;
     currentDataType?: 'ai' | 'raw';
     showEditButton?: boolean;
-
+    showDataTypeIndicator?: boolean;
+    dataType?: 'raw' | 'ai';
 }
 
-export default function DashboardLayout({ children, title = 'Dashboard', description = 'Manage your data and insights', showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw', showEditButton = false }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, title = 'Dashboard', description = 'Manage your data and insights', showUpdateButton = false, onUpdateWidgets, isUpdating = false, currentDataType = 'raw', showEditButton = false, showDataTypeIndicator = false, dataType = 'raw' }: DashboardLayoutProps) {
     const { url } = usePage();
     const { post } = useForm();
     const { auth } = usePage().props as any;
@@ -181,8 +183,28 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                                 <p className="text-sm text-gray-600">{description}</p>
                             </div>
 
-                            {/* Right side - Data Source Switch and Edit Button */}
+                            {/* Right side - Data Type Indicator, Data Source Switch and Edit Button */}
                             <div className="flex items-center space-x-3">
+                                {showDataTypeIndicator && (
+                                    <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2 border">
+                                        <div className="flex items-center space-x-2">
+                                            {dataType === 'ai' ? (
+                                                <>
+                                                    <BrainCircuit className="h-4 w-4 text-blue-600" />
+                                                    <span className="text-sm font-medium text-blue-600">AI Analysis</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Database className="h-4 w-4 text-gray-600" />
+                                                    <span className="text-sm font-medium text-gray-600">Raw Data</span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <Badge variant="outline" className="text-xs">
+                                            {dataType === 'ai' ? 'AI-powered' : 'Manual'}
+                                        </Badge>
+                                    </div>
+                                )}
                                 {showUpdateButton && onUpdateWidgets && (
                                     <div className="flex items-center bg-gray-100 rounded-lg p-1">
                                         <button

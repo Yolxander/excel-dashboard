@@ -66,14 +66,15 @@ interface WidgetSelectionProps {
     currentFile: UploadedFile | null;
     availableWidgets: FileWidgetConnection[];
     displayedWidgets: FileWidgetConnection[];
-
+    dataType: 'raw' | 'ai';
 }
 
 export default function WidgetSelection({
     uploadedFiles,
     currentFile,
     availableWidgets,
-    displayedWidgets
+    displayedWidgets,
+    dataType
 }: WidgetSelectionProps) {
     const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(currentFile);
     const [widgets, setWidgets] = useState<FileWidgetConnection[]>(availableWidgets);
@@ -443,7 +444,8 @@ export default function WidgetSelection({
             <DashboardLayout
                 title="Widget Selection"
                 description="Customize and manage your dashboard widgets"
-    
+                showDataTypeIndicator={true}
+                dataType={dataType}
             >
                 <div className="space-y-6">
                     {/* Back to Dashboard Button */}
@@ -873,43 +875,38 @@ export default function WidgetSelection({
                                                 </DialogDescription>
                                             </DialogHeader>
                                             <div className="space-y-6 py-6">
-                                                {/* Creation Method Selection */}
+                                                {/* Creation Method Selection - Based on Data Type */}
                                                 <div className="space-y-3">
                                                     <Label className="text-sm font-semibold text-gray-700">
                                                         Creation Method
                                                     </Label>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <Button
-                                                            variant={newWidgetConfig.method === 'ai' ? 'default' : 'outline'}
-                                                            onClick={() => setNewWidgetConfig({ ...newWidgetConfig, method: 'ai' })}
-                                                            className={`h-auto p-4 flex flex-col items-center space-y-2 ${
-                                                                newWidgetConfig.method === 'ai'
-                                                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                                                    : 'hover:bg-gray-50'
-                                                            }`}
-                                                        >
-                                                            <BrainCircuit className="h-6 w-6" />
-                                                            <span className="font-medium">AI Generated</span>
-                                                            <span className="text-xs text-gray-500">Let AI create the widget</span>
-                                                        </Button>
-                                                        <Button
-                                                            variant={newWidgetConfig.method === 'manual' ? 'default' : 'outline'}
-                                                            onClick={() => setNewWidgetConfig({ ...newWidgetConfig, method: 'manual' })}
-                                                            className={`h-auto p-4 flex flex-col items-center space-y-2 ${
-                                                                newWidgetConfig.method === 'manual'
-                                                                    ? 'bg-green-50 border-green-200 text-green-700'
-                                                                    : 'hover:bg-gray-50'
-                                                            }`}
-                                                        >
-                                                            <Settings className="h-6 w-6" />
-                                                            <span className="font-medium">Manual</span>
-                                                            <span className="text-xs text-gray-500">Configure manually</span>
-                                                        </Button>
-                                                    </div>
+                                                    {dataType === 'ai' ? (
+                                                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                                            <div className="flex items-center space-x-2 mb-2">
+                                                                <BrainCircuit className="h-5 w-5 text-blue-600" />
+                                                                <span className="font-medium text-blue-900">AI Analysis Mode</span>
+                                                            </div>
+                                                            <p className="text-sm text-blue-700">
+                                                                In AI Analysis mode, widgets are automatically generated using AI insights.
+                                                                You can provide optional descriptions to guide the AI.
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                                            <div className="flex items-center space-x-2 mb-2">
+                                                                <Database className="h-5 w-5 text-gray-600" />
+                                                                <span className="font-medium text-gray-900">Raw Data Mode</span>
+                                                            </div>
+                                                            <p className="text-sm text-gray-700">
+                                                                In Raw Data mode, you manually configure widgets by selecting columns and functions.
+                                                                This gives you full control over your data visualization.
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                {/* Widget Name - Only for Manual Method */}
-                                                {newWidgetConfig.method === 'manual' && (
+                                                {/* Widget Name - Required for Raw Data Mode */}
+                                                {dataType === 'raw' && (
                                                     <div className="space-y-2">
                                                         <Label htmlFor="widget-name" className="text-sm font-semibold text-gray-700">
                                                             Widget Name
@@ -924,8 +921,8 @@ export default function WidgetSelection({
                                                     </div>
                                                 )}
 
-                                                {/* AI Method Form */}
-                                                {newWidgetConfig.method === 'ai' && (
+                                                {/* AI Method Form - Only for AI Analysis Mode */}
+                                                {dataType === 'ai' && (
                                                     <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                                         <Label htmlFor="ai-description" className="text-sm font-semibold text-gray-700">
                                                             What should this widget be about?
@@ -943,8 +940,8 @@ export default function WidgetSelection({
                                                     </div>
                                                 )}
 
-                                                {/* AI Suggestions for Manual Creation */}
-                                                {newWidgetConfig.method === 'manual' && widgetSuggestions && (
+                                                {/* AI Suggestions for Manual Creation - Only for Raw Data Mode */}
+                                                {dataType === 'raw' && widgetSuggestions && (
                                                     <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                                                         <div className="flex items-center space-x-2 mb-3">
                                                             <BrainCircuit className="h-5 w-5 text-blue-600" />
@@ -1239,7 +1236,7 @@ export default function WidgetSelection({
                                                 </Button>
                                                 <Button
                                                     onClick={async () => {
-                                                                                                                if (newWidgetConfig.method === 'ai') {
+                                                                                                                if (dataType === 'ai') {
 
 
                                                             // Show progress toast for AI widget creation
@@ -1297,7 +1294,7 @@ export default function WidgetSelection({
                                                                     duration: 5000,
                                                                 });
                                                             }
-                                                        } else if (newWidgetConfig.method === 'manual') {
+                                                        } else if (dataType === 'raw') {
                                                             // Create manual widget
 
 

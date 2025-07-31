@@ -15,6 +15,7 @@ class WidgetSelectionController extends Controller
 {
     public function index()
     {
+        $user = Auth::user();
         $uploadedFiles = UploadedFile::where('user_id', Auth::id())
             ->where('status', 'completed')
             ->orderBy('created_at', 'desc')
@@ -23,34 +24,17 @@ class WidgetSelectionController extends Controller
         $currentFile = null;
         $availableWidgets = [];
         $displayedWidgets = [];
-        $dataType = 'ai'; // default
+        $dataType = $user->dashboard_data_type ?? 'raw'; // Use user's preference
 
-        // Get the currently connected file from FileWidgetConnection (AI widgets)
-        $connectedFile = FileWidgetConnection::with('uploadedFile')
-            ->whereHas('uploadedFile', function($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->where('is_displayed', true)
-            ->orderBy('display_order')
+        // Get the most recent completed file
+        $currentFile = UploadedFile::where('user_id', Auth::id())
+            ->where('status', 'completed')
+            ->orderBy('updated_at', 'desc')
             ->first();
 
-        // Get the currently connected file from DashboardWidget (Raw data widgets)
-        $dashboardWidget = DashboardWidget::where('user_id', Auth::id())
-            ->where('is_displayed', true)
-            ->orderBy('display_order')
-            ->first();
-
-        // Determine which type of widgets are active
-        if ($dashboardWidget) {
-            $dataType = 'raw';
-            // For raw data widgets, get the most recent file
-            $currentFile = UploadedFile::where('user_id', Auth::id())
-                ->where('status', 'completed')
-                ->orderBy('updated_at', 'desc')
-                ->first();
-
-            if ($currentFile) {
-                // Get raw data widgets
+        if ($currentFile) {
+            if ($dataType === 'raw') {
+                // For raw data widgets, get DashboardWidget widgets
                 $availableWidgets = DashboardWidget::where('user_id', Auth::id())
                     ->orderBy('display_order')
                     ->get();
@@ -59,21 +43,17 @@ class WidgetSelectionController extends Controller
                     ->where('is_displayed', true)
                     ->orderBy('display_order')
                     ->get();
+            } else {
+                // For AI widgets, get FileWidgetConnection widgets
+                $availableWidgets = FileWidgetConnection::where('uploaded_file_id', $currentFile->id)
+                    ->orderBy('display_order')
+                    ->get();
+
+                $displayedWidgets = FileWidgetConnection::where('uploaded_file_id', $currentFile->id)
+                    ->where('is_displayed', true)
+                    ->orderBy('display_order')
+                    ->get();
             }
-        } elseif ($connectedFile && $connectedFile->uploadedFile) {
-            $dataType = 'ai';
-            $currentFile = $connectedFile->uploadedFile;
-
-            // Get all available widgets for this file
-            $availableWidgets = FileWidgetConnection::where('uploaded_file_id', $currentFile->id)
-                ->orderBy('display_order')
-                ->get();
-
-            // Get currently displayed widgets
-            $displayedWidgets = FileWidgetConnection::where('uploaded_file_id', $currentFile->id)
-                ->where('is_displayed', true)
-                ->orderBy('display_order')
-                ->get();
         }
 
 
@@ -89,23 +69,40 @@ class WidgetSelectionController extends Controller
 
     public function getWidgetsForFile(Request $request, $fileId)
     {
+        $user = Auth::user();
         $file = UploadedFile::where('id', $fileId)
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        $availableWidgets = FileWidgetConnection::where('uploaded_file_id', $file->id)
-            ->orderBy('display_order')
-            ->get();
+        $dataType = $user->dashboard_data_type ?? 'raw';
 
-        $displayedWidgets = FileWidgetConnection::where('uploaded_file_id', $file->id)
-            ->where('is_displayed', true)
-            ->orderBy('display_order')
-            ->get();
+        if ($dataType === 'raw') {
+            // For raw data widgets, get DashboardWidget widgets
+            $availableWidgets = DashboardWidget::where('user_id', Auth::id())
+                ->orderBy('display_order')
+                ->get();
+
+            $displayedWidgets = DashboardWidget::where('user_id', Auth::id())
+                ->where('is_displayed', true)
+                ->orderBy('display_order')
+                ->get();
+        } else {
+            // For AI widgets, get FileWidgetConnection widgets
+            $availableWidgets = FileWidgetConnection::where('uploaded_file_id', $file->id)
+                ->orderBy('display_order')
+                ->get();
+
+            $displayedWidgets = FileWidgetConnection::where('uploaded_file_id', $file->id)
+                ->where('is_displayed', true)
+                ->orderBy('display_order')
+                ->get();
+        }
 
         return response()->json([
             'success' => true,
             'availableWidgets' => $availableWidgets,
             'displayedWidgets' => $displayedWidgets,
+            'dataType' => $dataType,
         ]);
     }
 
@@ -199,6 +196,16 @@ class WidgetSelectionController extends Controller
     {
         Log::info('AI Widget creation request received', $request->all());
 
+        $user = Auth::user();
+        
+        // Only allow AI widget creation if user's data type is 'ai'
+        if ($user->dashboard_data_type !== 'ai') {
+            return response()->json([
+                'success' => false,
+                'message' => 'AI widgets can only be created when in AI Analysis mode. Please switch to AI Analysis in the dashboard first.',
+            ], 403);
+        }
+
         $request->validate([
             'file_id' => 'required|exists:uploaded_files,id',
             'description' => 'nullable|string',
@@ -290,6 +297,16 @@ class WidgetSelectionController extends Controller
     public function createManualWidget(Request $request)
     {
         Log::info('Manual Widget creation request received', $request->all());
+
+        $user = Auth::user();
+        
+        // Only allow manual widget creation if user's data type is 'raw'
+        if ($user->dashboard_data_type !== 'raw') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Manual widgets can only be created when in Raw Data mode. Please switch to Raw Data in the dashboard first.',
+            ], 403);
+        }
 
         $request->validate([
             'file_id' => 'required|exists:uploaded_files,id',
