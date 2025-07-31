@@ -2,8 +2,16 @@ import type React from "react"
 import { Head, Link } from '@inertiajs/react'
 import { Button } from "@/components/ui/button"
 import { Settings, ShieldCheck, Package, Puzzle, Upload, BarChart3, Calculator, Brain, Building2, ShoppingCart, Factory, GraduationCap, Heart, FileSpreadsheet, ArrowRight, Users, TrendingUp, Lock, Target, Wrench, Sparkles } from "lucide-react"
+import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
 
 export default function WelcomePage() {
+  const heroRef = useIntersectionObserver({ threshold: 0.3 })
+  const featuresRef = useIntersectionObserver({ threshold: 0.2 })
+  const dashboardRef = useIntersectionObserver({ threshold: 0.3 })
+  const ctaRef = useIntersectionObserver({ threshold: 0.3 })
+  const industryRef = useIntersectionObserver({ threshold: 0.2 })
+  const testimonialsRef = useIntersectionObserver({ threshold: 0.2 })
+
   return (
     <>
       <Head title="Xcel Dashboard - Turn Any Excel File into a Beautiful Dashboard" />
@@ -21,17 +29,17 @@ export default function WelcomePage() {
                 </div>
 
                 <nav className="hidden md:flex items-center space-x-8">
-                  <Link href="#" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
-                    Product
+                  <Link href="#features" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
+                    Features
                   </Link>
-                  <Link href="#" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
-                    Pricing
+                  <Link href="#industries" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
+                    Industries
                   </Link>
-                  <Link href="#" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
-                    Resources
+                  <Link href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
+                    Testimonials
                   </Link>
-                  <Link href="#" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
-                    Blogs
+                  <Link href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
+                    How It Works
                   </Link>
                   <Link href="/login" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
                     Sign in
@@ -45,34 +53,55 @@ export default function WelcomePage() {
 
           {/* Hero Section */}
           <main className="container mx-auto px-4 py-12 md:py-20">
-            <div className="text-center max-w-7xl mx-auto">
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            <div
+              ref={heroRef.ref}
+              className={`text-center max-w-7xl mx-auto transition-all duration-1000 ease-out ${
+                heroRef.hasTriggered
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-8'
+              }`}
+            >
+              <h1 className={`text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight transition-all duration-700 delay-200 ${
+                heroRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 Turn Any Excel File into a Beautiful Dashboard in Minutes — No Code Required
               </h1>
 
-              <p className="text-lg md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+              <p className={`text-lg md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto transition-all duration-700 delay-400 ${
+                heroRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 Whether you're tracking sales, managing inventory, reviewing performance, or organizing project metrics — Xcel Dashboard transforms your Excel files into interactive dashboards that save time, boost clarity, and drive smarter decisions.
               </p>
 
               {/* Dashboard Mockup */}
-              <div className="relative mb-12">
+              <div
+                ref={dashboardRef.ref}
+                className={`relative mb-12 transition-all duration-1000 delay-600 ${
+                  dashboardRef.hasTriggered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                }`}
+              >
                 <img
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-xltiPok0hPuE0oECHqx06DRePuQZ1d.png"
+                  src="/welcome/dashboard.png"
                   alt="Xcel Dashboard Interface showing interactive data visualization"
-                  width={800}
-                  height={500}
+                  width={1000}
+                  height={600}
                   className="mx-auto rounded-2xl shadow-2xl"
                 />
               </div>
 
               {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <div
+                ref={ctaRef.ref}
+                className={`flex flex-col sm:flex-row gap-4 justify-center items-center transition-all duration-700 delay-800 ${
+                  ctaRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
+              >
                 <Link href="/login">
-                  <Button size="lg" className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3">
+                  <Button size="lg" className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 transition-transform hover:scale-105">
                     Try Xcel Dashboard Now
                   </Button>
                 </Link>
-                <Button variant="outline" size="lg" className="px-8 py-3 bg-transparent">
+                <Button variant="outline" size="lg" className="px-8 py-3 bg-transparent transition-transform hover:scale-105">
                   Request a Demo
                 </Button>
               </div>
@@ -80,9 +109,17 @@ export default function WelcomePage() {
           </main>
 
           {/* Features Section */}
-          <section className="container mx-auto px-4 py-12 md:py-20">
+          <section
+            id="features"
+            ref={featuresRef.ref}
+            className={`container mx-auto px-4 py-12 md:py-20 transition-all duration-1000 ease-out ${
+              featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
             <div className="flex flex-col md:flex-row items-start justify-between mb-12 gap-8">
-              <div className="md:w-1/2">
+              <div className={`md:w-1/2 transition-all duration-700 delay-200 ${
+                featuresRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
+              }`}>
                 <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
                   <span className="w-2 h-2 bg-gray-700 rounded-full mr-2" />
                   What You Can Do
@@ -91,11 +128,13 @@ export default function WelcomePage() {
                   Built for Teams, Trusted by Everyone
                 </h2>
               </div>
-              <div className="md:w-1/2 flex flex-col items-start md:items-end text-left md:text-right">
+              <div className={`md:w-1/2 flex flex-col items-start md:items-end text-left md:text-right transition-all duration-700 delay-400 ${
+                featuresRef.hasTriggered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
+              }`}>
                 <p className="text-lg text-gray-600 mb-6 max-w-md">
                   Simply drag & drop your Excel files and watch them transform into beautiful, interactive dashboards. No coding required, no learning curve.
                 </p>
-                <Button className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2.5 rounded-full flex items-center gap-2">
+                <Button className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2.5 rounded-full flex items-center gap-2 transition-transform hover:scale-105">
                   Learn More <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -103,7 +142,9 @@ export default function WelcomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               {/* Feature Card 1 */}
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50 transition-all duration-700 delay-300 hover:shadow-xl hover:scale-105 ${
+                featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="p-6">
                   <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
                     <Upload className="w-6 h-6 text-blue-600" />
@@ -118,7 +159,9 @@ export default function WelcomePage() {
               </div>
 
               {/* Feature Card 2 */}
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50 transition-all duration-700 delay-500 hover:shadow-xl hover:scale-105 ${
+                featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="p-6">
                   <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
                     <BarChart3 className="w-6 h-6 text-green-600" />
@@ -136,7 +179,9 @@ export default function WelcomePage() {
             {/* Additional Feature Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Feature Card 3 */}
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50 transition-all duration-700 delay-700 hover:shadow-xl hover:scale-105 ${
+                featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="p-6">
                   <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
                     <Calculator className="w-6 h-6 text-purple-600" />
@@ -151,7 +196,9 @@ export default function WelcomePage() {
               </div>
 
               {/* Feature Card 4 */}
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100/50 transition-all duration-700 delay-900 hover:shadow-xl hover:scale-105 ${
+                featuresRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="p-6">
                   <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-4">
                     <Brain className="w-6 h-6 text-orange-600" />
@@ -167,9 +214,17 @@ export default function WelcomePage() {
             </div>
           </section>
 
-          {/* Industry Use Cases Section */}
-          <section className="container mx-auto px-4 py-12 md:py-20">
-            <div className="text-center mb-12">
+                    {/* Industry Use Cases Section */}
+          <section
+            id="industries"
+            ref={industryRef.ref}
+            className={`container mx-auto px-4 py-12 md:py-20 transition-all duration-1000 ease-out ${
+              industryRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            <div className={`text-center mb-12 transition-all duration-700 delay-200 ${
+              industryRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
               <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center justify-center">
                 <span className="w-2 h-2 bg-gray-700 rounded-full mr-2" />
                 Designed for Any Use Case
@@ -182,7 +237,9 @@ export default function WelcomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Industry Card 1 */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-300 hover:shadow-xl hover:scale-105 ${
+                industryRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-blue-600" />
                 </div>
@@ -191,7 +248,9 @@ export default function WelcomePage() {
               </div>
 
               {/* Industry Card 2 */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-400 hover:shadow-xl hover:scale-105 ${
+                industryRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
                   <ShoppingCart className="w-6 h-6 text-green-600" />
                 </div>
@@ -200,7 +259,9 @@ export default function WelcomePage() {
               </div>
 
               {/* Industry Card 3 */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-500 hover:shadow-xl hover:scale-105 ${
+                industryRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
                   <Building2 className="w-6 h-6 text-purple-600" />
                 </div>
@@ -209,7 +270,9 @@ export default function WelcomePage() {
               </div>
 
               {/* Industry Card 4 */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-600 hover:shadow-xl hover:scale-105 ${
+                industryRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
                   <Heart className="w-6 h-6 text-red-600" />
                 </div>
@@ -218,7 +281,9 @@ export default function WelcomePage() {
               </div>
 
               {/* Industry Card 5 */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-700 hover:shadow-xl hover:scale-105 ${
+                industryRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center mb-4">
                   <GraduationCap className="w-6 h-6 text-yellow-600" />
                 </div>
@@ -227,7 +292,9 @@ export default function WelcomePage() {
               </div>
 
               {/* Industry Card 6 */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100/50">
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 transition-all duration-700 delay-800 hover:shadow-xl hover:scale-105 ${
+                industryRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
                 <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-4">
                   <Factory className="w-6 h-6 text-orange-600" />
                 </div>
@@ -237,146 +304,114 @@ export default function WelcomePage() {
             </div>
           </section>
 
-          {/* Testimonials Section */}
-          <section className="container mx-auto px-4 py-12 md:py-20 text-center">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Trusted by Teams</p>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-              What our users are saying
-            </h2>
-            <p className="text-lg text-gray-600 mb-12">From analysts to managers, founders to ops teams</p>
+                    {/* Testimonials Section */}
+          <section
+            id="testimonials"
+            ref={testimonialsRef.ref}
+            className={`container mx-auto px-4 py-12 md:py-20 text-center transition-all duration-1000 ease-out ${
+              testimonialsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            <div className={`transition-all duration-700 delay-200 ${
+              testimonialsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}>
+              <p className="text-sm font-semibold text-gray-700 mb-2">Trusted by Teams</p>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+                What our users are saying
+              </h2>
+              <p className="text-lg text-gray-600 mb-12">From analysts to managers, founders to ops teams</p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Testimonial Card 1 */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 flex flex-col items-start text-left">
-                <div className="flex items-center mb-4">
-                  <img
-                    src="/placeholder.svg?height=24&width=24"
-                    alt="Company Logo"
-                    width={24}
-                    height={24}
-                    className="mr-2"
-                  />
-                  <span className="font-bold text-gray-900">Tech Startup</span>
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 flex flex-col items-start text-left transition-all duration-700 delay-300 hover:shadow-xl hover:scale-105 ${
+                testimonialsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="mb-4">
+                  <span className="font-bold text-gray-900">Humanacont</span>
                 </div>
                 <p className="text-gray-700 text-sm mb-6 flex-grow">
-                  &quot;Xcel Dashboard saved us hours every week. Instead of rebuilding PowerPoint reports, we just upload our Excel files and get beautiful dashboards instantly.&quot;
+                  &quot;Xcel Dashboard transformed our reporting process completely. We went from spending hours on manual reports to having beautiful, interactive dashboards in minutes. The team loves how easy it is to share insights.&quot;
                 </p>
-                <div className="flex items-center mt-auto">
-                  <img
-                    src="/placeholder.svg?height=40&width=40"
-                    alt="Sarah Chen"
-                    width={40}
-                    height={40}
-                    className="rounded-full mr-3"
-                  />
-                  <div>
-                    <p className="font-semibold text-gray-900">Sarah Chen</p>
-                    <p className="text-gray-600 text-sm">Operations Manager</p>
-                  </div>
+                <div className="mt-auto">
+                  <p className="font-semibold text-gray-900">Kristina</p>
+                  <p className="text-gray-600 text-sm">Operations Manager</p>
                 </div>
               </div>
 
               {/* Testimonial Card 2 (with gradient) */}
-              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg p-6 border border-gray-100/50 flex flex-col items-start text-left">
-                <div className="flex items-center mb-4">
-                  <img
-                    src="/placeholder.svg?height=24&width=24"
-                    alt="Company Logo"
-                    width={24}
-                    height={24}
-                    className="mr-2"
-                  />
-                  <span className="font-bold text-gray-900">Retail Chain</span>
+              <div className={`bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg p-6 border border-gray-100/50 flex flex-col items-start text-left transition-all duration-700 delay-500 hover:shadow-xl hover:scale-105 ${
+                testimonialsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="mb-4">
+                  <span className="font-bold text-gray-900">Jonex Solutions</span>
                 </div>
                 <p className="text-gray-700 text-sm mb-6 flex-grow">
-                  &quot;Our inventory dashboards are now updated in real-time. The team can see exactly what&apos;s selling and what needs restocking without digging through spreadsheets.&quot;
+                  &quot;The real-time data visualization capabilities are incredible. Our clients can now see their performance metrics instantly, and the AI insights help us identify opportunities we would have missed before.&quot;
                 </p>
-                <div className="flex items-center mt-auto">
-                  <img
-                    src="/placeholder.svg?height=40&width=40"
-                    alt="Mike Rodriguez"
-                    width={40}
-                    height={40}
-                    className="rounded-full mr-3"
-                  />
-                  <div>
-                    <p className="font-semibold text-gray-900">Mike Rodriguez</p>
-                    <p className="text-gray-600 text-sm">Store Manager</p>
-                  </div>
+                <div className="mt-auto">
+                  <p className="font-semibold text-gray-900">Alexander</p>
+                  <p className="text-gray-600 text-sm">Data Analyst</p>
                 </div>
               </div>
 
               {/* Testimonial Card 3 */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 flex flex-col items-start text-left">
-                <div className="flex items-center mb-4">
-                  <img
-                    src="/placeholder.svg?height=24&width=24"
-                    alt="Company Logo"
-                    width={24}
-                    height={24}
-                    className="mr-2"
-                  />
-                  <span className="font-bold text-gray-900">Consulting Firm</span>
+              <div className={`bg-white rounded-xl shadow-lg p-6 border border-gray-100/50 flex flex-col items-start text-left transition-all duration-700 delay-700 hover:shadow-xl hover:scale-105 ${
+                testimonialsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}>
+                <div className="mb-4">
+                  <span className="font-bold text-gray-900">Sempre Studios</span>
                 </div>
                 <p className="text-gray-700 text-sm mb-6 flex-grow">
-                  &quot;We create custom dashboards for clients in minutes instead of days. The AI insights feature has been a game-changer for identifying trends and opportunities.&quot;
+                  &quot;As a creative agency, we needed a way to present data beautifully to our clients. Xcel Dashboard lets us create stunning visualizations that match our brand aesthetic while delivering powerful insights.&quot;
                 </p>
-                <div className="flex items-center mt-auto">
-                  <img
-                    src="/placeholder.svg?height=40&width=40"
-                    alt="Alex Thompson"
-                    width={40}
-                    height={40}
-                    className="rounded-full mr-3"
-                  />
-                  <div>
-                    <p className="font-semibold text-gray-900">Alex Thompson</p>
-                    <p className="text-gray-600 text-sm">Data Analyst</p>
-                  </div>
+                <div className="mt-auto">
+                  <p className="font-semibold text-gray-900">Shannon</p>
+                  <p className="text-gray-600 text-sm">Creative Director</p>
                 </div>
               </div>
             </div>
           </section>
 
           {/* How It Works Section */}
-          <section className="container mx-auto px-4 py-12 md:py-20 text-center">
+          <section id="how-it-works" className="container mx-auto px-4 py-12 md:py-20 text-center">
             <p className="text-sm font-semibold text-gray-700 mb-2">How It Works</p>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">Simple 4-Step Process</h2>
             <p className="text-lg text-gray-600 mb-12">Get started in minutes, not hours</p>
 
             <div className="flex flex-col md:flex-row items-start gap-12">
               {/* Left side: Process Steps */}
-              <div className="md:w-1/2 bg-white rounded-xl shadow-lg p-6 border border-gray-100/50">
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Your Journey to Better Dashboards</h3>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
+              <div className="md:w-1/2 space-y-6">
+                <div className="bg-white rounded-lg p-6 border border-gray-100/50">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">1</div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Upload Your Excel File</h4>
-                      <p className="text-gray-600 text-sm">Drag & drop your .xlsx or .csv file</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
+                    Upload Your Excel File
+                  </h3>
+                  <p className="text-gray-600 text-sm">Drag & drop your .xlsx or .csv file</p>
+                </div>
+
+                <div className="bg-white rounded-lg p-6 border border-gray-100/50">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold">2</div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Choose a Template</h4>
-                      <p className="text-gray-600 text-sm">Select from pre-built templates or start from scratch</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
+                    Choose a Template
+                  </h3>
+                  <p className="text-gray-600 text-sm">Select from pre-built templates or start from scratch</p>
+                </div>
+
+                <div className="bg-white rounded-lg p-6 border border-gray-100/50">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center text-sm font-bold">3</div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Customize & Configure</h4>
-                      <p className="text-gray-600 text-sm">Add charts, filters, and custom calculations</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
+                    Customize & Configure
+                  </h3>
+                  <p className="text-gray-600 text-sm">Add charts, filters, and custom calculations</p>
+                </div>
+
+                <div className="bg-white rounded-lg p-6 border border-gray-100/50">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-bold">4</div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Share & Collaborate</h4>
-                      <p className="text-gray-600 text-sm">Get instant, shareable insights with your team</p>
-                    </div>
-                  </div>
+                    Share & Collaborate
+                  </h3>
+                  <p className="text-gray-600 text-sm">Get instant, shareable insights with your team</p>
                 </div>
               </div>
 
@@ -439,7 +474,7 @@ export default function WelcomePage() {
             </Link>
             <div className="relative mt-12">
               <img
-                src="/placeholder.svg?height=400&width=800"
+                src="/welcome/files.png"
                 alt="Blurred Dashboard Interface"
                 width={800}
                 height={400}

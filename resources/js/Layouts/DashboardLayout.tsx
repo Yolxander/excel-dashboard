@@ -15,18 +15,11 @@ import {
     LogOut,
     Edit,
     Shield,
-    User,
-    ChevronDown
+    User
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
 import OnboardingChecklist from '@/components/ui/onboarding-checklist';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -109,26 +102,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                         ))}
                     </nav>
 
-                    {/* User Profile Section */}
-                    {user && (
-                        <div className="border-t border-gray-200 px-4 py-4">
-                            <div className="flex items-center space-x-3">
-                                <div className="flex-shrink-0">
-                                    <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                                        <User className="h-4 w-4 text-white" />
-                                    </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">
-                                        {user.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500 truncate">
-                                        {user.email}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+
                 </div>
             </div>
 
@@ -195,44 +169,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                                     </Link>
                                 )}
 
-                                {/* Profile Dropdown */}
-                                {user && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors">
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center">
-                                                        <User className="h-3 w-3 text-white" />
-                                                    </div>
-                                                    <span>{user.name}</span>
-                                                    <ChevronDown className="h-4 w-4" />
-                                                </div>
-                                            </button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-56">
-                                            <div className="flex items-center justify-start gap-2 p-2">
-                                                <div className="flex flex-col space-y-1 leading-none">
-                                                    <p className="font-medium">{user.name}</p>
-                                                    <p className="w-[200px] truncate text-sm text-muted-foreground">
-                                                        {user.email}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem asChild>
-                                                <Link href="/profile" className="cursor-pointer">
-                                                    <User className="mr-2 h-4 w-4" />
-                                                    <span>Profile</span>
-                                                </Link>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                                                <LogOut className="mr-2 h-4 w-4" />
-                                                <span>Log out</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
+
                             </div>
                         </div>
                     </div>
