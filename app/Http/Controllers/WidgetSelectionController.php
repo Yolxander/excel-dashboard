@@ -197,7 +197,7 @@ class WidgetSelectionController extends Controller
         Log::info('AI Widget creation request received', $request->all());
 
         $user = Auth::user();
-        
+
         // Only allow AI widget creation if user's data type is 'ai'
         if ($user->dashboard_data_type !== 'ai') {
             return response()->json([
@@ -299,7 +299,7 @@ class WidgetSelectionController extends Controller
         Log::info('Manual Widget creation request received', $request->all());
 
         $user = Auth::user();
-        
+
         // Only allow manual widget creation if user's data type is 'raw'
         if ($user->dashboard_data_type !== 'raw') {
             return response()->json([
@@ -312,12 +312,9 @@ class WidgetSelectionController extends Controller
             'file_id' => 'required|exists:uploaded_files,id',
             'widget_name' => 'required|string|max:255',
             'widget_type' => 'required|string|in:kpi,bar_chart,pie_chart,table',
-            'function' => 'required|string',
-            'column' => 'required_if:widget_type,kpi|string',
-            'x_axis' => 'required_if:widget_type,bar_chart|string',
-            'y_axis' => 'required_if:widget_type,bar_chart|string',
-            'category_column' => 'required_if:widget_type,pie_chart|string',
-            'value_column' => 'required_if:widget_type,pie_chart|string',
+            'columns' => 'required|array',
+            'operation' => 'required|string|in:sum,average,count,min,max,custom',
+            'custom_formula' => 'nullable|string',
         ]);
 
         // Verify the file belongs to the authenticated user
@@ -332,7 +329,7 @@ class WidgetSelectionController extends Controller
             $widgetName = $request->widget_name;
             $counter = 1;
 
-            while (FileWidgetConnection::where('uploaded_file_id', $file->id)
+            while (DashboardWidget::where('user_id', Auth::id())
                     ->where('widget_name', $widgetName)
                     ->exists()) {
                 $widgetName = $request->widget_name . ' (' . $counter . ')';
@@ -342,15 +339,15 @@ class WidgetSelectionController extends Controller
             // Create widget configuration based on type
             $widgetConfig = $this->createWidgetConfig($request, $file);
 
-            // Create the widget connection
-            $widgetConnection = FileWidgetConnection::create([
-                'uploaded_file_id' => $file->id,
+            // Create the widget (using DashboardWidget for raw data mode)
+            $widgetConnection = DashboardWidget::create([
+                'user_id' => Auth::id(),
                 'widget_name' => $widgetName,
                 'widget_type' => $request->widget_type,
                 'widget_config' => $widgetConfig,
                 'is_displayed' => true,
-                'display_order' => FileWidgetConnection::where('uploaded_file_id', $file->id)->max('display_order') + 1,
-                'ai_insights' => null,
+                'display_order' => DashboardWidget::where('user_id', Auth::id())->max('display_order') + 1,
+                'data_type' => 'raw',
             ]);
 
             Log::info('Manual widget created successfully', [
@@ -439,53 +436,44 @@ class WidgetSelectionController extends Controller
     {
         $config = [
             'description' => '',
-            'source_columns' => [],
+            'source_columns' => $request->columns,
             'calculation_method' => '',
-            'last_ai_analysis' => now()->toISOString()
+            'last_ai_analysis' => now()->toISOString(),
+            'operation' => $request->operation,
+            'custom_formula' => $request->custom_formula,
         ];
 
         switch ($request->widget_type) {
             case 'kpi':
-                $config['description'] = "Shows the {$request->function} of {$request->column}";
-                $config['source_columns'] = [$request->column];
-                $config['calculation_method'] = ucfirst($request->function) . ' of all values';
-                $config['function'] = $request->function;
+                $columnsText = implode(', ', $request->columns);
+                $config['description'] = "Shows the {$request->operation} of {$columnsText}";
+                $config['calculation_method'] = ucfirst($request->operation) . ' of selected columns';
                 break;
 
             case 'bar_chart':
-                $config['description'] = "Shows {$request->y_axis} by {$request->x_axis}";
-                $config['source_columns'] = [$request->x_axis, $request->y_axis];
-                $config['calculation_method'] = "Group by {$request->x_axis} and sum {$request->y_axis}";
-                $config['function'] = $request->function;
-                $config['ai_chart_config'] = [
+                $config['description'] = "Shows chart data for selected columns";
+                $config['calculation_method'] = "Chart visualization of selected data";
+                $config['chart_config'] = [
                     'title' => $request->widget_name,
-                    'x_axis' => $request->x_axis,
-                    'y_axis' => $request->y_axis,
-                    'description' => "Shows {$request->y_axis} by {$request->x_axis}",
+                    'description' => "Chart showing data from selected columns",
                     'chart_data' => []
                 ];
                 break;
 
             case 'pie_chart':
-                $config['description'] = "Shows distribution of {$request->value_column} by {$request->category_column}";
-                $config['source_columns'] = [$request->category_column, $request->value_column];
+                $config['description'] = "Shows distribution chart for selected columns";
                 $config['calculation_method'] = 'Distribution analysis';
-                $config['function'] = $request->function;
-                $config['ai_chart_config'] = [
+                $config['chart_config'] = [
                     'title' => $request->widget_name,
-                    'category_column' => $request->category_column,
-                    'value_column' => $request->value_column,
-                    'description' => "Shows distribution of {$request->value_column} by {$request->category_column}",
+                    'description' => "Pie chart showing distribution of selected data",
                     'chart_data' => []
                 ];
                 break;
 
             case 'table':
-                $config['description'] = "Shows data table";
-                $config['source_columns'] = $file->processed_data['headers'] ?? [];
-                $config['calculation_method'] = 'Display all data';
-                $config['function'] = $request->function;
-                $config['headers'] = $file->processed_data['headers'] ?? [];
+                $config['description'] = "Shows data table for selected columns";
+                $config['calculation_method'] = 'Display selected data';
+                $config['headers'] = $request->columns;
                 $config['data'] = array_slice($file->processed_data['data'] ?? [], 0, 10);
                 $config['maxRows'] = 10;
                 break;
