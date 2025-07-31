@@ -72,10 +72,10 @@ export default function SecurityPrivacy() {
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Cloud className="h-4 w-4 text-green-600" />
-                                        <span className="font-medium">Cloudflare R2 Storage</span>
+                                        <span className="font-medium">AWS S3 Storage</span>
                                     </div>
                                     <p className="text-sm text-muted-foreground">
-                                        Files are stored in Cloudflare R2 with automatic encryption and global CDN distribution.
+                                        Files are stored in AWS S3 with automatic encryption and global CDN distribution.
                                     </p>
                                 </div>
                             </div>
