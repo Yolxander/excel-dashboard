@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Circle, X, ChevronDown, ChevronUp, Trophy, Sparkles, PartyPopper } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usePage } from '@inertiajs/react';
 
 interface OnboardingStep {
     id: number;
@@ -36,7 +37,16 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
     const [isLoading, setIsLoading] = useState(!initialData);
     const [showCelebration, setShowCelebration] = useState(false);
     const [previousProgress, setPreviousProgress] = useState(0);
+    const [shownToastSteps, setShownToastSteps] = useState<Set<number>>(new Set());
     const { toast } = useToast();
+    const hasShownInitialToast = useRef(false);
+    const { url } = usePage();
+
+    // Check if we should show toasts on the current page
+    const shouldShowToasts = () => {
+        const noToastPages = ['/profile', '/security-privacy', '/privacy-policy'];
+        return !noToastPages.some(page => url.startsWith(page));
+    };
 
     console.log('OnboardingChecklist props:', { initialData, className });
     console.log('OnboardingChecklist state:', { onboardingData, isExpanded, isLoading, showCelebration });
@@ -74,7 +84,8 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
             // 1. Progress is 100%
             // 2. Onboarding is completed
             // 3. Congratulations haven't been shown before
-            if (currentProgress === 100 && onboardingData.is_completed && !onboardingData.congratulations_shown) {
+            // 4. We're on a page where toasts should be shown
+            if (currentProgress === 100 && onboardingData.is_completed && !onboardingData.congratulations_shown && shouldShowToasts()) {
                 console.log('Showing congratulations toast!');
                 setShowCelebration(true);
                 toast({
@@ -113,21 +124,27 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
                 console.log('Onboarding data received:', data);
                 setOnboardingData(data);
 
-                // Check if any new steps were completed
-                if (data.progress.completed_steps > 0) {
+                // Only show toasts for newly completed steps on initial load if we haven't shown them yet
+                if (data.progress.completed_steps > 0 && !hasShownInitialToast.current && shouldShowToasts()) {
                     const newlyCompleted = data.progress.steps.filter((step: OnboardingStep) =>
                         step.is_completed && step.completed_at
                     );
 
                     if (newlyCompleted.length > 0) {
-                        // Show success toast for newly completed steps
+                        const newShownSteps = new Set(shownToastSteps);
+                        // Show success toast for newly completed steps only once
                         newlyCompleted.forEach((step: OnboardingStep) => {
-                            toast({
-                                title: "🎉 Onboarding Progress!",
-                                description: `Great job! You've completed: ${step.step_name}`,
-                                className: "border-green-200 bg-green-50 text-green-800",
-                            });
+                            if (!shownToastSteps.has(step.id)) {
+                                toast({
+                                    title: "🎉 Onboarding Progress!",
+                                    description: `Great job! You've completed: ${step.step_name}`,
+                                    className: "border-green-200 bg-green-50 text-green-800",
+                                });
+                                newShownSteps.add(step.id);
+                            }
                         });
+                        setShownToastSteps(newShownSteps);
+                        hasShownInitialToast.current = true;
                     }
                 }
             } else {
@@ -184,14 +201,21 @@ export default function OnboardingChecklist({ className = '', initialData }: Onb
                         !oldCompletedSteps.some(oldStep => oldStep.id === newStep.id)
                     );
 
-                    // Show toast for newly completed steps
-                    newlyCompleted.forEach(step => {
-                        toast({
-                            title: "🎉 Step Completed!",
-                            description: `Great job! You've completed: ${step.step_name}`,
-                            className: "border-green-200 bg-green-50 text-green-800",
+                    // Show toast for newly completed steps only if there are actually new completions
+                    if (newlyCompleted.length > 0 && shouldShowToasts()) {
+                        const newShownSteps = new Set(shownToastSteps);
+                        newlyCompleted.forEach(step => {
+                            if (!shownToastSteps.has(step.id)) {
+                                toast({
+                                    title: "🎉 Step Completed!",
+                                    description: `Great job! You've completed: ${step.step_name}`,
+                                    className: "border-green-200 bg-green-50 text-green-800",
+                                });
+                                newShownSteps.add(step.id);
+                            }
                         });
-                    });
+                        setShownToastSteps(newShownSteps);
+                    }
                 }
 
                 setOnboardingData(newData);

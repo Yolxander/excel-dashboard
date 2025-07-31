@@ -10,6 +10,7 @@ use App\Http\Controllers\DataSourcesController;
 use App\Http\Controllers\SyncScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\ProfileController;
 
 // Protected Routes (require authentication)
 Route::middleware(['auth'])->group(function () {
@@ -30,6 +31,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/combine-files/{fileId}/regenerate-insights', [CombineFilesController::class, 'regenerateAIInsights']);
     Route::get('/data-sources', [DataSourcesController::class, 'index']);
     Route::get('/sync-schedule', [SyncScheduleController::class, 'index']);
+    
+    // Profile Routes
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+    Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/update-password', [ProfileController::class, 'updatePassword'])->name('profile.update-password');
 });
 
 // Authentication Routes (guest only)
