@@ -82,11 +82,17 @@ class DashboardController extends Controller
 
 
 
-        // Determine data type based on query parameter or actual widgets
-        $dataType = $request->query('dataType', 'raw'); // Get from query parameter or default to 'raw'
+        // Determine data type based on query parameter, user preference, or actual widgets
+        $dataType = $request->query('dataType', null); // Get from query parameter
+        $user = Auth::user();
 
-        // If no query parameter, determine from widgets
-        if (!$request->has('dataType')) {
+        // If no query parameter, check user's database preference
+        if (!$dataType) {
+            $dataType = $user->dashboard_data_type ?? null;
+        }
+
+        // If still no data type, determine from widgets
+        if (!$dataType) {
             if ($displayedWidgets->isNotEmpty()) {
                 // Check if any widget has AI data type
                 $hasAIData = $displayedWidgets->contains('data_type', 'ai');
@@ -97,6 +103,16 @@ class DashboardController extends Controller
             if ($dashboardWidgets->isNotEmpty()) {
                 $dataType = 'raw';
             }
+        }
+
+        // Default to 'raw' if still no data type
+        if (!$dataType) {
+            $dataType = 'raw';
+        }
+
+        // Store the data type in user's database record for persistence
+        if ($user->dashboard_data_type !== $dataType) {
+            $user->update(['dashboard_data_type' => $dataType]);
         }
 
         // Filter widgets based on data type
