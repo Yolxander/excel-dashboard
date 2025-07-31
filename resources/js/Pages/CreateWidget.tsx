@@ -330,10 +330,10 @@ export default function CreateWidget({ file, widgetType, dataType }: CreateWidge
                                                                     : [...selectedColumns, header];
                                                                 setSelectedColumns(newColumns);
                                                             }}
-                                                            className={`h-auto p-3 text-sm ${
+                                                            className={`h-auto p-3 text-sm transition-all duration-200 ${
                                                                 selectedColumns.includes(header)
-                                                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                                                    : 'hover:bg-gray-50'
+                                                                    ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
+                                                                    : 'hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 hover:shadow-sm'
                                                             }`}
                                                         >
                                                             {header}
@@ -367,10 +367,10 @@ export default function CreateWidget({ file, widgetType, dataType }: CreateWidge
                                                             key={op.value}
                                                             variant={operation === op.value ? 'default' : 'outline'}
                                                             onClick={() => setOperation(op.value as any)}
-                                                            className={`h-auto p-3 text-sm ${
+                                                            className={`h-auto p-3 text-sm transition-all duration-200 ${
                                                                 operation === op.value
-                                                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                                                    : 'hover:bg-gray-50'
+                                                                    ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
+                                                                    : 'hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 hover:shadow-sm'
                                                             }`}
                                                         >
                                                             <div className="flex flex-col items-center space-y-1">
