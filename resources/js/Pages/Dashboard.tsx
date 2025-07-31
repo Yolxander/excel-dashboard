@@ -124,7 +124,7 @@ export default function Dashboard({
             if (!hasShownAI) {
                 setToastMessage({
                     type: 'success',
-                    message: 'AI-enhanced widgets and charts are now active! Switch between AI Insights and Raw Data using the toggle above.'
+                                            message: 'AI-enhanced widgets and charts are now active! Switch between AI Analysis and Raw Data using the toggle above.'
                 });
                 setTimeout(() => setToastMessage(null), 5000);
                 sessionStorage.setItem('ai_insights_shown', 'true');
@@ -165,7 +165,7 @@ export default function Dashboard({
                 setCurrentDataType(dataType);
                 setToastMessage({
                     type: 'success',
-                    message: `Switched to ${dataType === 'ai' ? 'AI insights' : 'raw data'}!`
+                    message: `Switched to ${dataType === 'ai' ? 'AI analysis' : 'raw data'}!`
                 });
 
                 // Clear session storage to allow fresh notifications after switch
@@ -534,7 +534,7 @@ export default function Dashboard({
                                 {currentDataType === 'ai' ? (
                                     <>
                                         <BrainCircuit className="h-3 w-3 mr-1" />
-                                        AI Insights
+                                        AI Analysis
                                     </>
                                 ) : (
                                     <>

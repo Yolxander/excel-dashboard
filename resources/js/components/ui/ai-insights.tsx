@@ -35,7 +35,7 @@ export function AIInsights({ insights, onRegenerate, isRegenerating = false, sho
             <div className="flex items-center justify-between">
                 <h4 className="font-medium text-gray-900 flex items-center">
                     <Brain className="h-4 w-4 mr-2 text-purple-600" />
-                    AI Insights
+                    AI Analysis
                 </h4>
                 {showRegenerateButton && onRegenerate && (
                     <Button
@@ -147,7 +147,7 @@ export function AIInsightsCard({ insights, onRegenerate, isRegenerating = false,
                 <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center">
                         <Lightbulb className="h-5 w-5 mr-2 text-yellow-600" />
-                        AI Insights
+                        AI Analysis
                     </div>
                     {showRegenerateButton && onRegenerate && (
                         <Button

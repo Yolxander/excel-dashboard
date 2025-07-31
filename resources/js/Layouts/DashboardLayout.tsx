@@ -216,7 +216,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                                             ) : (
                                                 <Sparkles className="h-4 w-4 mr-2" />
                                             )}
-                                            AI Insights
+                                            AI Analysis
                                         </button>
                                     </div>
                                 )}

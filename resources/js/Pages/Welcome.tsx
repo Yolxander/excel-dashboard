@@ -328,7 +328,7 @@ export default function WelcomePage() {
                 testimonialsRef.hasTriggered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}>
                 <div className="mb-4">
-                  <span className="font-bold text-gray-900">Humanacont</span>
+                  <span className="font-bold text-gray-900">HumanContact</span>
                 </div>
                 <p className="text-gray-700 text-sm mb-6 flex-grow">
                   &quot;Xcel Dashboard transformed our reporting process completely. We went from spending hours on manual reports to having beautiful, interactive dashboards in minutes. The team loves how easy it is to share insights.&quot;
