@@ -278,7 +278,7 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                 onboardingData={onboardingData}
             >
                                 <div className="flex justify-between items-center mb-6">
-                    <Link href="/">
+                    <Link href="/dashboard">
                         <Button variant="outline">
                             ← Back to Dashboard
                         </Button>
@@ -455,7 +455,7 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                                                         </Button>
                                                     </Link>
                                                 )}
-                                                
+
                                                 <div className="flex items-center space-x-1">
                                                     {uploadedFiles.links.map((link, index) => {
                                                         if (link.url === null) {
@@ -465,7 +465,7 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                                                                 </span>
                                                             );
                                                         }
-                                                        
+
                                                         return (
                                                             <Link key={index} href={link.url}>
                                                                 <Button
@@ -479,7 +479,7 @@ export default function UploadFiles({ uploadedFiles, success, error, onboardingD
                                                         );
                                                     })}
                                                 </div>
-                                                
+
                                                 {uploadedFiles.next_page_url && (
                                                     <Link href={uploadedFiles.next_page_url}>
                                                         <Button variant="outline" size="sm">

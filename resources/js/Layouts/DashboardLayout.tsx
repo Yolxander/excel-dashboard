@@ -54,7 +54,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
         {
             section: 'Dashboards',
             items: [
-                { id: 'overview', label: 'Data Overview', icon: BarChart3, href: '/' },
+                { id: 'overview', label: 'Data Overview', icon: BarChart3, href: '/dashboard' },
                 { id: 'widget-selection', label: 'Widget Selection', icon: Settings, href: '/widget-selection' }
             ]
         },
@@ -68,12 +68,7 @@ export default function DashboardLayout({ children, title = 'Dashboard', descrip
                 // { id: 'schedule', label: 'Sync Schedule', icon: Clock, href: '/sync-schedule' }
             ]
         },
-        {
-            section: 'Security & Support',
-            items: [
-                { id: 'security-privacy', label: 'Security & Privacy', icon: Shield, href: '/security-privacy' }
-            ]
-        }
+
     ];
 
     return (

@@ -12,9 +12,14 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 
+// Welcome page (public)
+Route::get('/', function () {
+    return Inertia::render('Welcome');
+})->name('welcome');
+
 // Protected Routes (require authentication)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index']);
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/upload-files', [UploadFilesController::class, 'index']);
     Route::post('/upload-files', [UploadFilesController::class, 'store']);
     Route::delete('/upload-files/{id}', [UploadFilesController::class, 'destroy']);
@@ -75,12 +80,19 @@ Route::post('/widget-selection/create-manual-widget', [App\Http\Controllers\Widg
 Route::get('/widget-selection/suggestions/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetSuggestions'])->name('widget-selection.suggestions');
 Route::get('/widget-selection/function-options/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetFunctionOptions'])->name('widget-selection.function-options');
 
-// Privacy Policy Route
+// Privacy Policy Route (public)
 Route::get('/privacy-policy', function () {
     return Inertia::render('PrivacyPolicy');
 })->name('privacy-policy');
 
-// Security & Privacy Route
-Route::get('/security-privacy', function () {
-    return Inertia::render('SecurityPrivacy');
-})->name('security-privacy');
+// Security Route (public)
+Route::get('/security', function () {
+    return Inertia::render('Security');
+})->name('security');
+
+// Security & Privacy Route (protected - keeping for backward compatibility)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/security-privacy', function () {
+        return Inertia::render('SecurityPrivacy');
+    })->name('security-privacy');
+});

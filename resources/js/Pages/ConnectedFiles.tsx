@@ -213,7 +213,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets, onboar
                 });
                 // Redirect to dashboard to see the AI insights
                 setTimeout(() => {
-                    window.location.href = '/';
+                    window.location.href = '/dashboard';
                 }, 2000);
             } else {
                 setToastMessage({ type: 'error', message: data.message || 'AI analysis failed' });
@@ -309,7 +309,7 @@ export default function ConnectedFiles({ uploadedFiles, dashboardWidgets, onboar
                                 <div>
                                     <p className="text-sm font-medium">{toastMessage.message}</p>
                                     {toastMessage.showDashboardLink && (
-                                        <Link href="/" className="text-xs text-blue-600 hover:text-blue-800 underline mt-1 inline-block">
+                                        <Link href="/dashboard" className="text-xs text-blue-600 hover:text-blue-800 underline mt-1 inline-block">
                                             See Dashboard →
                                         </Link>
                                     )}
