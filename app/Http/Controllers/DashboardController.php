@@ -761,6 +761,7 @@ class DashboardController extends Controller
         if (!$activeWidget) {
             $uploadedFile = UploadedFile::where('user_id', $userId)
                 ->where('status', 'completed')
+                ->select(['id', 'filename', 'original_filename', 'file_type', 'file_size', 'status', 'processed_data', 'ai_insights', 'created_at', 'updated_at'])
                 ->orderBy('updated_at', 'desc')
                 ->first();
 
@@ -881,6 +882,7 @@ class DashboardController extends Controller
         if (!$activeWidget) {
             $uploadedFile = UploadedFile::where('user_id', $userId)
                 ->where('status', 'completed')
+                ->select(['id', 'filename', 'original_filename', 'file_type', 'file_size', 'status', 'processed_data', 'ai_insights', 'created_at', 'updated_at'])
                 ->orderBy('updated_at', 'desc')
                 ->first();
 

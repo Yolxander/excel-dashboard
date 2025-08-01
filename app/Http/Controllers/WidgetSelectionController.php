@@ -29,6 +29,7 @@ class WidgetSelectionController extends Controller
         // Get the most recent completed file
         $currentFile = UploadedFile::where('user_id', Auth::id())
             ->where('status', 'completed')
+            ->select(['id', 'filename', 'original_filename', 'file_type', 'file_size', 'status', 'processed_data', 'ai_insights', 'created_at', 'updated_at'])
             ->orderBy('updated_at', 'desc')
             ->first();
 
