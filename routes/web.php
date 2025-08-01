@@ -62,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard Update Routes
     Route::post('/dashboard/update-raw-data/current', [DashboardController::class, 'updateWithRawData']);
 
-    
+
 });
 
 Route::get('/widget-selection', [App\Http\Controllers\WidgetSelectionController::class, 'index'])->name('widget-selection');

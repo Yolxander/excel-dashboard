@@ -485,18 +485,41 @@ class WidgetSelectionController extends Controller
     public function removeWidget(Request $request, $widgetId)
     {
         try {
-            // Find the widget and verify it belongs to the authenticated user
+            $user = Auth::user();
+            $widget = null;
+            $widgetType = null;
+
+            // First try to find the widget in FileWidgetConnection (AI widgets)
             $widget = FileWidgetConnection::where('id', $widgetId)
                 ->whereHas('uploadedFile', function($query) {
                     $query->where('user_id', Auth::id());
                 })
-                ->firstOrFail();
+                ->first();
 
-            Log::info('Removing widget', [
-                'widget_id' => $widget->id,
-                'widget_name' => $widget->widget_name,
-                'file_id' => $widget->uploaded_file_id
-            ]);
+            if ($widget) {
+                $widgetType = 'ai';
+                Log::info('Removing AI widget', [
+                    'widget_id' => $widget->id,
+                    'widget_name' => $widget->widget_name,
+                    'file_id' => $widget->uploaded_file_id
+                ]);
+            } else {
+                // If not found in FileWidgetConnection, try DashboardWidget (raw data widgets)
+                $widget = DashboardWidget::where('id', $widgetId)
+                    ->where('user_id', Auth::id())
+                    ->first();
+
+                if ($widget) {
+                    $widgetType = 'raw';
+                    Log::info('Removing raw data widget', [
+                        'widget_id' => $widget->id,
+                        'widget_name' => $widget->widget_name,
+                        'user_id' => $widget->user_id
+                    ]);
+                } else {
+                    throw new \Exception('Widget not found');
+                }
+            }
 
             // Delete the widget
             $widget->delete();

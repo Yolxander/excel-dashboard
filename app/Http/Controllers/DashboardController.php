@@ -46,22 +46,46 @@ class DashboardController extends Controller
         $aiInsights = null;
 
         if ($displayedWidgets->isNotEmpty()) {
-            $file = $displayedWidgets->first()->uploadedFile;
-            $data = $file->processed_data;
+            // Get the file from the first widget that has a file relationship
+            $file = null;
+            $data = null;
+            $aiInsights = null;
+            $connectedFile = null;
 
-            // Use existing AI insights from the file if available, don't trigger new analysis
-            $aiInsights = $file->ai_insights;
+            // First try to get file from AI widgets (FileWidgetConnection)
+            $aiWidget = $displayedWidgets->first(function($widget) {
+                return $widget instanceof \App\Models\FileWidgetConnection;
+            });
 
-            if ($aiInsights && isset($aiInsights['widget_insights'])) {
-                $stats = $this->generateStatsFromAIInsights($aiInsights['widget_insights']);
-                $chartData = $this->generateChartDataFromAIInsights($aiInsights);
+            if ($aiWidget) {
+                $file = $aiWidget->uploadedFile;
+                $data = $file->processed_data;
+                $aiInsights = $file->ai_insights;
+                $connectedFile = $file->original_filename;
             } else {
-                $stats = $this->generateStatsFromData($data);
-                $chartData = $this->generateChartDataFromData($data);
+                // If no AI widgets, get the most recent completed file for raw data widgets
+                $file = UploadedFile::where('user_id', Auth::id())
+                    ->where('status', 'completed')
+                    ->orderBy('updated_at', 'desc')
+                    ->first();
+
+                if ($file) {
+                    $data = $file->processed_data;
+                    $connectedFile = $file->original_filename;
+                }
             }
 
-            $tableData = $this->generateTableDataFromData($data);
-            $connectedFile = $file->original_filename;
+            if ($data) {
+                if ($aiInsights && isset($aiInsights['widget_insights'])) {
+                    $stats = $this->generateStatsFromAIInsights($aiInsights['widget_insights']);
+                    $chartData = $this->generateChartDataFromAIInsights($aiInsights);
+                } else {
+                    $stats = $this->generateStatsFromData($data);
+                    $chartData = $this->generateChartDataFromData($data);
+                }
+
+                $tableData = $this->generateTableDataFromData($data);
+            }
         } else {
             // When no file is connected, pass empty data to show welcome state
             $stats = [
@@ -126,6 +150,11 @@ class DashboardController extends Controller
             }
             return false;
         })->values(); // Convert to array and re-index
+
+        // Calculate actual values for raw data widgets
+        if ($dataType === 'raw' && $file && $data) {
+            $filteredWidgets = $this->calculateRawDataWidgetValues($filteredWidgets, $data);
+        }
 
         $props = [
             'stats' => $stats,
@@ -898,6 +927,108 @@ class DashboardController extends Controller
                 'success' => false,
                 'message' => 'Error updating dashboard: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Calculate actual values for raw data widgets based on their configuration
+     */
+    private function calculateRawDataWidgetValues($widgets, $data)
+    {
+        $rows = $data['data'] ?? [];
+        $headers = $data['headers'] ?? [];
+
+        if (empty($rows)) {
+            return $widgets;
+        }
+
+        foreach ($widgets as $widget) {
+            if ($widget instanceof \App\Models\DashboardWidget) {
+                $config = $widget->widget_config ?? [];
+                $sourceColumns = $config['source_columns'] ?? [];
+                $operation = $config['operation'] ?? 'sum';
+                $customFormula = $config['custom_formula'] ?? '';
+
+                // Calculate value based on widget configuration
+                $calculatedValue = $this->calculateWidgetValue($rows, $sourceColumns, $operation, $customFormula);
+
+                // Create a new config array with calculated values
+                $updatedConfig = $config;
+                $updatedConfig['calculated_value'] = $calculatedValue;
+                $updatedConfig['formatted_value'] = $this->formatWidgetValue($calculatedValue, $operation);
+
+                // Set the updated config
+                $widget->widget_config = $updatedConfig;
+            }
+        }
+
+        return $widgets;
+    }
+
+    /**
+     * Calculate a single widget value based on its configuration
+     */
+    private function calculateWidgetValue($rows, $sourceColumns, $operation, $customFormula)
+    {
+        if (empty($sourceColumns) || empty($rows)) {
+            return 0;
+        }
+
+        $values = [];
+
+        // Extract values from selected columns
+        foreach ($rows as $row) {
+            $rowValue = 0;
+
+            foreach ($sourceColumns as $column) {
+                if (isset($row[$column])) {
+                    $numericValue = $this->extractNumericValue($row[$column]);
+                    if ($operation === 'sum' || $operation === 'average') {
+                        $rowValue += $numericValue;
+                    } elseif ($operation === 'count') {
+                        $rowValue += 1; // Count non-empty values
+                    } elseif ($operation === 'max') {
+                        $rowValue = max($rowValue, $numericValue);
+                    } elseif ($operation === 'min') {
+                        $rowValue = $rowValue === 0 ? $numericValue : min($rowValue, $numericValue);
+                    }
+                }
+            }
+
+            $values[] = $rowValue;
+        }
+
+        // Apply operation
+        switch ($operation) {
+            case 'sum':
+                return array_sum($values);
+            case 'average':
+                return count($values) > 0 ? array_sum($values) / count($values) : 0;
+            case 'count':
+                return count(array_filter($values, function($v) { return $v > 0; }));
+            case 'max':
+                return empty($values) ? 0 : max($values);
+            case 'min':
+                return empty($values) ? 0 : min(array_filter($values, function($v) { return $v > 0; }));
+            case 'custom':
+                // For custom formula, return a placeholder for now
+                return count($values);
+            default:
+                return array_sum($values);
+        }
+    }
+
+    /**
+     * Format widget value for display
+     */
+    private function formatWidgetValue($value, $operation)
+    {
+        if ($operation === 'count') {
+            return number_format($value);
+        } elseif ($operation === 'average') {
+            return number_format($value, 2);
+        } else {
+            return number_format($value);
         }
     }
 

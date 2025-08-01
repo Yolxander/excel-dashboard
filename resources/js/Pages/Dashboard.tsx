@@ -322,8 +322,11 @@ export default function Dashboard({
         // Handle DashboardWidget (raw data widgets)
         if ('data_type' in widget) {
             const config = widget.widget_config;
-            if (config && config.value) {
-                return config.value.toString();
+            if (config && config.formatted_value) {
+                return config.formatted_value.toString();
+            }
+            if (config && config.calculated_value !== undefined) {
+                return config.calculated_value.toString();
             }
             return '0';
         }
