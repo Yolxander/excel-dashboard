@@ -83,6 +83,8 @@ class DashboardController extends Controller
         $chartData = [];
         $tableData = [];
         $aiInsights = null;
+        $file = null;
+        $data = null;
 
         if ($displayedWidgets->isNotEmpty() && $connectedFileId) {
             // Get the file data
