@@ -65,18 +65,19 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
-Route::get('/widget-selection', [App\Http\Controllers\WidgetSelectionController::class, 'index'])->name('widget-selection');
-Route::get('/widget-selection/widgets/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetsForFile'])->name('widget-selection.widgets');
-Route::post('/widget-selection/update', [App\Http\Controllers\WidgetSelectionController::class, 'updateWidgetSelection'])->name('widget-selection.update');
-Route::post('/widget-selection/connect/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'connectFile'])->name('widget-selection.connect');
-Route::delete('/widget-selection/remove-widget/{widgetId}', [App\Http\Controllers\WidgetSelectionController::class, 'removeWidget'])->name('widget-selection.remove-widget');
-Route::post('/ai/create-widget', [App\Http\Controllers\WidgetSelectionController::class, 'createAIWidget'])->name('ai.create-widget');
-Route::post('/widget-selection/create-manual-widget', [App\Http\Controllers\WidgetSelectionController::class, 'createManualWidget'])->name('widget-selection.create-manual-widget');
-Route::get('/widget-selection/suggestions/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetSuggestions'])->name('widget-selection.suggestions');
-Route::get('/widget-selection/function-options/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetFunctionOptions'])->name('widget-selection.function-options');
+    // Widget Selection Routes (protected)
+    Route::get('/widget-selection', [App\Http\Controllers\WidgetSelectionController::class, 'index'])->name('widget-selection');
+    Route::get('/widget-selection/widgets/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetsForFile'])->name('widget-selection.widgets');
+    Route::post('/widget-selection/update', [App\Http\Controllers\WidgetSelectionController::class, 'updateWidgetSelection'])->name('widget-selection.update');
+    Route::post('/widget-selection/connect/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'connectFile'])->name('widget-selection.connect');
+    Route::delete('/widget-selection/remove-widget/{widgetId}', [App\Http\Controllers\WidgetSelectionController::class, 'removeWidget'])->name('widget-selection.remove-widget');
+    Route::post('/ai/create-widget', [App\Http\Controllers\WidgetSelectionController::class, 'createAIWidget'])->name('ai.create-widget');
+    Route::post('/widget-selection/create-manual-widget', [App\Http\Controllers\WidgetSelectionController::class, 'createManualWidget'])->name('widget-selection.create-manual-widget');
+    Route::get('/widget-selection/suggestions/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetSuggestions'])->name('widget-selection.suggestions');
+    Route::get('/widget-selection/function-options/{fileId}', [App\Http\Controllers\WidgetSelectionController::class, 'getWidgetFunctionOptions'])->name('widget-selection.function-options');
 
-// Widget Creation Routes
-Route::get('/create-widget/{fileId}/{widgetType}', [App\Http\Controllers\CreateWidgetController::class, 'index'])->name('create-widget');
+    // Widget Creation Routes
+    Route::get('/create-widget/{fileId}/{widgetType}', [App\Http\Controllers\CreateWidgetController::class, 'index'])->name('create-widget');
 
 // Privacy Policy Route (public)
 Route::get('/privacy-policy', function () {
