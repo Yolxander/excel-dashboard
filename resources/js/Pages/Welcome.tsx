@@ -43,12 +43,16 @@ export default function WelcomePage() {
                   <Link href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
                     How It Works
                   </Link>
-                  <Link href="/login" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">
-                    Sign in
+                  <Link href="/register" className="text-gray-600 text-sm font-medium hover:text-gray-900 transition-colors">
+                    Sign up
                   </Link>
                 </nav>
 
-                <Link href="/register" className="text-gray-600 text-sm font-medium hover:text-gray-900 transition-colors">Sign up</Link>
+                <Link href="/login">
+                  <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200">
+                    Sign in
+                  </Button>
+                </Link>
               </div>
             </div>
           </header>
