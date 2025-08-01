@@ -996,12 +996,13 @@ class DashboardController extends Controller
         $values = [];
 
         // Extract values from selected columns
-        foreach ($rows as $row) {
+        foreach ($rows as $rowIndex => $row) {
             $rowValue = 0;
 
             foreach ($sourceColumns as $column) {
                 if (isset($row[$column])) {
                     $numericValue = $this->extractNumericValue($row[$column]);
+
                     if ($operation === 'sum' || $operation === 'average') {
                         $rowValue += $numericValue;
                     } elseif ($operation === 'count') {
@@ -1018,23 +1019,32 @@ class DashboardController extends Controller
         }
 
         // Apply operation
+        $result = 0;
         switch ($operation) {
             case 'sum':
-                return array_sum($values);
+                $result = array_sum($values);
+                break;
             case 'average':
-                return count($values) > 0 ? array_sum($values) / count($values) : 0;
+                $result = count($values) > 0 ? array_sum($values) / count($values) : 0;
+                break;
             case 'count':
-                return count(array_filter($values, function($v) { return $v > 0; }));
+                $result = count(array_filter($values, function($v) { return $v > 0; }));
+                break;
             case 'max':
-                return empty($values) ? 0 : max($values);
+                $result = empty($values) ? 0 : max($values);
+                break;
             case 'min':
-                return empty($values) ? 0 : min(array_filter($values, function($v) { return $v > 0; }));
+                $result = empty($values) ? 0 : min(array_filter($values, function($v) { return $v > 0; }));
+                break;
             case 'custom':
                 // For custom formula, return a placeholder for now
-                return count($values);
+                $result = count($values);
+                break;
             default:
-                return array_sum($values);
+                $result = array_sum($values);
         }
+
+        return $result;
     }
 
     /**

@@ -42,6 +42,47 @@ export default function CreateWidget({ file, widgetType, dataType }: CreateWidge
     const [customFormula, setCustomFormula] = useState('');
     const [aiDescription, setAiDescription] = useState('');
 
+    // Function to detect if a column is numeric
+    const isNumericColumn = (columnName: string) => {
+        if (!file.processed_data?.data || file.processed_data.data.length === 0) return false;
+
+        // Check first few rows to determine if column is numeric
+        const sampleSize = Math.min(10, file.processed_data.data.length);
+        let numericCount = 0;
+
+        for (let i = 0; i < sampleSize; i++) {
+            const value = file.processed_data.data[i][columnName];
+            if (value !== null && value !== undefined && value !== '') {
+                // Check if it's a number or can be converted to number
+                const num = parseFloat(value.toString());
+                if (!isNaN(num)) {
+                    numericCount++;
+                }
+            }
+        }
+
+        // Consider column numeric if more than 50% of sample values are numeric
+        return numericCount > sampleSize * 0.5;
+    };
+
+    // Get numeric and non-numeric columns
+    const numericColumns = file.processed_data?.headers?.filter(isNumericColumn) || [];
+    const nonNumericColumns = file.processed_data?.headers?.filter(col => !isNumericColumn(col)) || [];
+
+    // Check if current selection is valid for the operation
+    const isSelectionValid = () => {
+        if (operation === 'count') return true; // Count works on any column
+        if (operation === 'custom') return true; // Custom formula can handle any column
+
+        // For numeric operations, all selected columns should be numeric
+        return selectedColumns.every(col => isNumericColumn(col));
+    };
+
+    const getInvalidColumns = () => {
+        if (operation === 'count' || operation === 'custom') return [];
+        return selectedColumns.filter(col => !isNumericColumn(col));
+    };
+
     const getWidgetTypeLabel = () => {
         if (widgetType === 'kpi') return 'KPI Widget';
         if (widgetType === 'chart') return 'Chart Widget';
@@ -319,30 +360,68 @@ export default function CreateWidget({ file, widgetType, dataType }: CreateWidge
                                                 <Label className="text-sm font-semibold text-gray-700">
                                                     Select Columns
                                                 </Label>
-                                                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
-                                                    {file.processed_data?.headers?.map((header: string) => (
-                                                        <Button
-                                                            key={header}
-                                                            variant={selectedColumns.includes(header) ? 'default' : 'outline'}
-                                                            onClick={() => {
-                                                                const newColumns = selectedColumns.includes(header)
-                                                                    ? selectedColumns.filter(col => col !== header)
-                                                                    : [...selectedColumns, header];
-                                                                setSelectedColumns(newColumns);
-                                                            }}
-                                                            className={`h-auto p-3 text-sm transition-all duration-200 ${
-                                                                selectedColumns.includes(header)
-                                                                    ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm hover:bg-blue-100 hover:border-blue-300 hover:shadow-md'
-                                                                    : 'hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 hover:shadow-sm'
-                                                            }`}
-                                                        >
-                                                            {header}
-                                                        </Button>
-                                                    ))}
+
+                                                {/* Column Type Info */}
+                                                <div className="text-xs text-gray-600 space-y-1">
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                                        <span>Numeric columns (good for calculations)</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                                                        <span>Text columns (good for counting)</span>
+                                                    </div>
                                                 </div>
+
+                                                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                                                    {file.processed_data?.headers?.map((header: string) => {
+                                                        const isNumeric = isNumericColumn(header);
+                                                        const isSelected = selectedColumns.includes(header);
+                                                        const isInvalid = isSelected && !isSelectionValid() && getInvalidColumns().includes(header);
+
+                                                        return (
+                                                            <Button
+                                                                key={header}
+                                                                variant={isSelected ? 'default' : 'outline'}
+                                                                onClick={() => {
+                                                                    const newColumns = selectedColumns.includes(header)
+                                                                        ? selectedColumns.filter(col => col !== header)
+                                                                        : [...selectedColumns, header];
+                                                                    setSelectedColumns(newColumns);
+                                                                }}
+                                                                className={`h-auto p-3 text-sm transition-all duration-200 ${
+                                                                    isSelected
+                                                                        ? isInvalid
+                                                                            ? 'bg-red-50 border-red-200 text-red-700 shadow-sm hover:bg-red-100 hover:border-red-300 hover:shadow-md'
+                                                                            : 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm hover:bg-blue-100 hover:border-blue-300 hover:shadow-md'
+                                                                        : `hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 hover:shadow-sm ${
+                                                                            isNumeric ? 'border-green-200' : 'border-gray-200'
+                                                                        }`
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center space-x-2">
+                                                                    <div className={`w-2 h-2 rounded-full ${
+                                                                        isNumeric ? 'bg-green-500' : 'bg-gray-400'
+                                                                    }`}></div>
+                                                                    <span>{header}</span>
+                                                                </div>
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+
                                                 {selectedColumns.length > 0 && (
-                                                    <div className="text-sm text-gray-600 bg-green-50 p-2 rounded border border-green-200">
+                                                    <div className={`text-sm p-2 rounded border ${
+                                                        isSelectionValid()
+                                                            ? 'text-gray-600 bg-green-50 border-green-200'
+                                                            : 'text-red-600 bg-red-50 border-red-200'
+                                                    }`}>
                                                         <span className="font-medium">Selected:</span> {selectedColumns.join(', ')}
+                                                        {!isSelectionValid() && (
+                                                            <div className="mt-1 text-xs">
+                                                                ⚠️ Warning: {getInvalidColumns().join(', ')} {getInvalidColumns().length === 1 ? 'is' : 'are'} not numeric and may result in 0 values for {operation} operations.
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -356,30 +435,49 @@ export default function CreateWidget({ file, widgetType, dataType }: CreateWidge
                                                 </Label>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {[
-                                                        { value: 'sum', label: 'Sum', description: 'Add all values' },
-                                                        { value: 'average', label: 'Average', description: 'Calculate mean' },
-                                                        { value: 'count', label: 'Count', description: 'Count items' },
-                                                        { value: 'min', label: 'Minimum', description: 'Find lowest value' },
-                                                        { value: 'max', label: 'Maximum', description: 'Find highest value' },
-                                                        { value: 'custom', label: 'Custom', description: 'Custom formula' }
-                                                    ].map((op) => (
-                                                        <Button
-                                                            key={op.value}
-                                                            variant={operation === op.value ? 'default' : 'outline'}
-                                                            onClick={() => setOperation(op.value as any)}
-                                                            className={`h-auto p-3 text-sm transition-all duration-200 ${
-                                                                operation === op.value
-                                                                    ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm hover:bg-blue-100 hover:border-blue-300 hover:shadow-md'
-                                                                    : 'hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 hover:shadow-sm'
-                                                            }`}
-                                                        >
-                                                            <div className="flex flex-col items-center space-y-1">
-                                                                <span className="font-medium">{op.label}</span>
-                                                                <span className="text-xs text-gray-500">{op.description}</span>
-                                                            </div>
-                                                        </Button>
-                                                    ))}
+                                                        { value: 'sum', label: 'Sum', description: 'Add all values', requiresNumeric: true },
+                                                        { value: 'average', label: 'Average', description: 'Calculate mean', requiresNumeric: true },
+                                                        { value: 'count', label: 'Count', description: 'Count items', requiresNumeric: false },
+                                                        { value: 'min', label: 'Minimum', description: 'Find lowest value', requiresNumeric: true },
+                                                        { value: 'max', label: 'Maximum', description: 'Find highest value', requiresNumeric: true },
+                                                        { value: 'custom', label: 'Custom', description: 'Custom formula', requiresNumeric: false }
+                                                    ].map((op) => {
+                                                        const isRecommended = op.requiresNumeric
+                                                            ? selectedColumns.every(col => isNumericColumn(col))
+                                                            : true;
+                                                        const isCurrent = operation === op.value;
+
+                                                        return (
+                                                            <Button
+                                                                key={op.value}
+                                                                variant={isCurrent ? 'default' : 'outline'}
+                                                                onClick={() => setOperation(op.value as any)}
+                                                                className={`h-auto p-3 text-sm transition-all duration-200 ${
+                                                                    isCurrent
+                                                                        ? isRecommended
+                                                                            ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm hover:bg-blue-100 hover:border-blue-300 hover:shadow-md'
+                                                                            : 'bg-red-50 border-red-200 text-red-700 shadow-sm hover:bg-red-100 hover:border-red-300 hover:shadow-md'
+                                                                        : isRecommended
+                                                                            ? 'hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 hover:shadow-sm'
+                                                                            : 'hover:bg-red-50 hover:border-red-200 hover:text-red-700 hover:shadow-sm'
+                                                                }`}
+                                                            >
+                                                                <div className="flex flex-col items-center space-y-1">
+                                                                    <span className="font-medium">{op.label}</span>
+                                                                    <span className="text-xs text-gray-500">{op.description}</span>
+                                                                    {!isRecommended && (
+                                                                        <span className="text-xs text-red-500">⚠️ Needs numeric</span>
+                                                                    )}
+                                                                </div>
+                                                            </Button>
+                                                        );
+                                                    })}
                                                 </div>
+                                                {!isSelectionValid() && (
+                                                    <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                                                        💡 Tip: For {operation} operations, select numeric columns (green dots) for meaningful results.
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 

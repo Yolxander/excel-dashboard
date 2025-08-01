@@ -115,11 +115,13 @@ class WidgetSelectionController extends Controller
         $request->validate([
             'fileId' => 'required|exists:uploaded_files,id',
             'selectedWidgetIds' => 'required|array',
-            'selectedWidgetIds.*' => 'exists:file_widget_connections,id',
+            'selectedWidgetIds.*' => 'integer',
         ]);
 
         $fileId = $request->fileId;
         $selectedWidgetIds = $request->selectedWidgetIds;
+        $user = Auth::user();
+        $dataType = $user->dashboard_data_type ?? 'raw';
 
         // Verify the file belongs to the authenticated user
         $file = UploadedFile::where('id', $fileId)
@@ -128,30 +130,64 @@ class WidgetSelectionController extends Controller
 
         Log::info("Updating widget selection for file ID: {$fileId}");
         Log::info("Selected widget IDs: " . json_encode($selectedWidgetIds));
+        Log::info("Data type: " . $dataType);
 
-        // Reset all widgets for this file to not displayed
-        FileWidgetConnection::where('uploaded_file_id', $fileId)
-            ->update(['is_displayed' => false]);
+        if ($dataType === 'raw') {
+            // Handle raw data widgets (DashboardWidget)
 
-        // Set selected widgets as displayed
-        FileWidgetConnection::whereIn('id', $selectedWidgetIds)
-            ->update(['is_displayed' => true]);
+            // Reset all raw data widgets for this file to not displayed
+            DashboardWidget::where('user_id', Auth::id())
+                ->where('uploaded_file_id', $fileId)
+                ->update(['is_displayed' => false]);
 
-        // Update display order for selected widgets
-        $displayOrder = 1;
-        foreach ($selectedWidgetIds as $widgetId) {
-            FileWidgetConnection::where('id', $widgetId)
-                ->update(['display_order' => $displayOrder]);
-            $displayOrder++;
+            // Set selected raw data widgets as displayed
+            DashboardWidget::where('user_id', Auth::id())
+                ->whereIn('id', $selectedWidgetIds)
+                ->update(['is_displayed' => true]);
+
+            // Update display order for selected widgets
+            $displayOrder = 1;
+            foreach ($selectedWidgetIds as $widgetId) {
+                DashboardWidget::where('user_id', Auth::id())
+                    ->where('id', $widgetId)
+                    ->update(['display_order' => $displayOrder]);
+                $displayOrder++;
+            }
+
+            // Log the updated widgets
+            $updatedWidgets = DashboardWidget::where('user_id', Auth::id())
+                ->where('uploaded_file_id', $fileId)
+                ->where('is_displayed', true)
+                ->orderBy('display_order')
+                ->get();
+
+        } else {
+            // Handle AI widgets (FileWidgetConnection)
+
+            // Reset all AI widgets for this file to not displayed
+            FileWidgetConnection::where('uploaded_file_id', $fileId)
+                ->update(['is_displayed' => false]);
+
+            // Set selected AI widgets as displayed
+            FileWidgetConnection::whereIn('id', $selectedWidgetIds)
+                ->update(['is_displayed' => true]);
+
+            // Update display order for selected widgets
+            $displayOrder = 1;
+            foreach ($selectedWidgetIds as $widgetId) {
+                FileWidgetConnection::where('id', $widgetId)
+                    ->update(['display_order' => $displayOrder]);
+                $displayOrder++;
+            }
+
+            // Log the updated widgets
+            $updatedWidgets = FileWidgetConnection::where('uploaded_file_id', $fileId)
+                ->where('is_displayed', true)
+                ->orderBy('display_order')
+                ->get();
         }
 
-        // Log the updated widgets
-        $updatedWidgets = FileWidgetConnection::where('uploaded_file_id', $fileId)
-            ->where('is_displayed', true)
-            ->orderBy('display_order')
-            ->get();
-
-
+        Log::info("Updated widgets: " . json_encode($updatedWidgets->toArray()));
 
         return response()->json([
             'success' => true,
@@ -161,6 +197,9 @@ class WidgetSelectionController extends Controller
 
     public function connectFile(Request $request, $fileId)
     {
+        $user = Auth::user();
+        $dataType = $user->dashboard_data_type ?? 'raw';
+
         $file = UploadedFile::where('id', $fileId)
             ->where('user_id', Auth::id())
             ->firstOrFail();
@@ -170,23 +209,48 @@ class WidgetSelectionController extends Controller
         }
 
         Log::info("Connecting file to dashboard: " . $file->original_filename);
+        Log::info("Data type: " . $dataType);
 
-        // Set all widgets for this file as displayed
-        $updatedWidgets = FileWidgetConnection::where('uploaded_file_id', $fileId)
-            ->update(['is_displayed' => true]);
+        if ($dataType === 'raw') {
+            // Handle raw data widgets (DashboardWidget)
 
-        // Set all widgets for other files as not displayed
-        $otherWidgets = FileWidgetConnection::where('uploaded_file_id', '!=', $fileId)
-            ->whereHas('uploadedFile', function($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->update(['is_displayed' => false]);
+            // Set all raw data widgets for this file as displayed
+            $updatedWidgets = DashboardWidget::where('user_id', Auth::id())
+                ->where('uploaded_file_id', $fileId)
+                ->update(['is_displayed' => true]);
 
-        // Log the connected widgets
-        $connectedWidgets = FileWidgetConnection::where('uploaded_file_id', $fileId)
-            ->where('is_displayed', true)
-            ->orderBy('display_order')
-            ->get();
+            // Set all raw data widgets for other files as not displayed
+            $otherWidgets = DashboardWidget::where('user_id', Auth::id())
+                ->where('uploaded_file_id', '!=', $fileId)
+                ->update(['is_displayed' => false]);
+
+            // Log the connected widgets
+            $connectedWidgets = DashboardWidget::where('user_id', Auth::id())
+                ->where('uploaded_file_id', $fileId)
+                ->where('is_displayed', true)
+                ->orderBy('display_order')
+                ->get();
+
+        } else {
+            // Handle AI widgets (FileWidgetConnection)
+
+            // Set all AI widgets for this file as displayed
+            $updatedWidgets = FileWidgetConnection::where('uploaded_file_id', $fileId)
+                ->update(['is_displayed' => true]);
+
+            // Set all AI widgets for other files as not displayed
+            $otherWidgets = FileWidgetConnection::where('uploaded_file_id', '!=', $fileId)
+                ->whereHas('uploadedFile', function($query) {
+                    $query->where('user_id', Auth::id());
+                })
+                ->update(['is_displayed' => false]);
+
+            // Log the connected widgets
+            $connectedWidgets = FileWidgetConnection::where('uploaded_file_id', $fileId)
+                ->where('is_displayed', true)
+                ->orderBy('display_order')
+                ->get();
+        }
 
         Log::info("Connected widgets for file ID {$fileId}: " . json_encode($connectedWidgets->toArray()));
 
