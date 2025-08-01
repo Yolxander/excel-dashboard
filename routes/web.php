@@ -120,3 +120,18 @@ Route::middleware(['auth'])->group(function () {
         return Inertia::render('SecurityPrivacy');
     })->name('security-privacy');
 });
+
+// Error handling route
+Route::get('/error/{code}', function ($code) {
+    return Inertia::render('Error', [
+        'error' => [
+            'code' => $code,
+            'message' => 'We are currently experiencing some technical issues. It should be fixed soon.',
+        ]
+    ]);
+})->name('error.show');
+
+// Test route to demonstrate error handling (remove in production)
+Route::get('/test-error', function () {
+    throw new Exception('This is a test error to demonstrate the custom error handling');
+})->name('test-error');
