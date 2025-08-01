@@ -17,8 +17,12 @@ class DashboardController extends Controller
 {
         public function index(Request $request)
     {
-        // Get the currently displayed widgets from FileWidgetConnection (AI widgets)
-        $fileWidgetConnections = FileWidgetConnection::with('uploadedFile')
+                // First, determine which file is connected to the dashboard
+        $connectedFile = null;
+        $connectedFileId = null;
+
+        // Check for AI widgets first (they have direct file relationships)
+        $connectedAIWidget = FileWidgetConnection::with('uploadedFile')
             ->whereHas('uploadedFile', function($query) {
                 $query->where('user_id', Auth::id());
             })
@@ -27,55 +31,70 @@ class DashboardController extends Controller
             ->whereHas('uploadedFile', function($query) {
                 $query->where('status', 'completed');
             })
-            ->orderBy('display_order')
-            ->get();
+            ->first();
 
-        // Get the currently displayed widgets from DashboardWidget (Raw data widgets)
-        $dashboardWidgets = DashboardWidget::where('user_id', Auth::id())
-            ->where('is_displayed', true)
-            ->orderBy('display_order')
-            ->get();
+        if ($connectedAIWidget) {
+            $connectedFile = $connectedAIWidget->uploadedFile->original_filename;
+            $connectedFileId = $connectedAIWidget->uploaded_file_id;
+        } else {
+            // Check for raw data widgets
+            $connectedRawWidget = DashboardWidget::where('user_id', Auth::id())
+                ->where('is_displayed', true)
+                ->whereNotNull('uploaded_file_id')
+                ->first();
+
+            if ($connectedRawWidget) {
+                $file = UploadedFile::where('id', $connectedRawWidget->uploaded_file_id)
+                    ->where('user_id', Auth::id())
+                    ->where('status', 'completed')
+                    ->first();
+
+                if ($file) {
+                    $connectedFile = $file->original_filename;
+                    $connectedFileId = $file->id;
+                }
+            }
+        }
+
+        // Get widgets only for the connected file
+        $fileWidgetConnections = collect();
+        $dashboardWidgets = collect();
+
+        if ($connectedFileId) {
+            // Get AI widgets for the connected file
+            $fileWidgetConnections = FileWidgetConnection::with('uploadedFile')
+                ->where('uploaded_file_id', $connectedFileId)
+                ->where('is_displayed', true)
+                ->orderBy('display_order')
+                ->get();
+
+            // Get raw data widgets for the connected file
+            $dashboardWidgets = DashboardWidget::where('user_id', Auth::id())
+                ->where('uploaded_file_id', $connectedFileId)
+                ->where('is_displayed', true)
+                ->orderBy('display_order')
+                ->get();
+        }
 
         // Combine both widget collections
         $displayedWidgets = $fileWidgetConnections->concat($dashboardWidgets);
 
-        $connectedFile = null;
         $stats = [];
         $chartData = [];
         $tableData = [];
         $aiInsights = null;
 
-        if ($displayedWidgets->isNotEmpty()) {
-            // Get the file from the first widget that has a file relationship
-            $file = null;
-            $data = null;
-            $aiInsights = null;
-            $connectedFile = null;
+        if ($displayedWidgets->isNotEmpty() && $connectedFileId) {
+            // Get the file data
+            $file = UploadedFile::where('id', $connectedFileId)
+                ->where('user_id', Auth::id())
+                ->where('status', 'completed')
+                ->first();
 
-            // First try to get file from AI widgets (FileWidgetConnection)
-            $aiWidget = $displayedWidgets->first(function($widget) {
-                return $widget instanceof \App\Models\FileWidgetConnection;
-            });
-
-            if ($aiWidget) {
-                $file = $aiWidget->uploadedFile;
+            if ($file) {
                 $data = $file->processed_data;
                 $aiInsights = $file->ai_insights;
-                $connectedFile = $file->original_filename;
-            } else {
-                // If no AI widgets, get the most recent completed file for raw data widgets
-                $file = UploadedFile::where('user_id', Auth::id())
-                    ->where('status', 'completed')
-                    ->orderBy('updated_at', 'desc')
-                    ->first();
 
-                if ($file) {
-                    $data = $file->processed_data;
-                    $connectedFile = $file->original_filename;
-                }
-            }
-
-            if ($data) {
                 if ($aiInsights && isset($aiInsights['widget_insights'])) {
                     $stats = $this->generateStatsFromAIInsights($aiInsights['widget_insights']);
                     $chartData = $this->generateChartDataFromAIInsights($aiInsights);

@@ -540,41 +540,82 @@ export default function WidgetSelection({
                                         <Card>
                                             <CardHeader>
                                                 <CardTitle className="flex items-center">
-                                                    <BrainCircuit className="h-5 w-5 mr-2 text-blue-600" />
+                                                    {dataType === 'raw' ? (
+                                                        <Database className="h-5 w-5 mr-2 text-blue-600" />
+                                                    ) : (
+                                                        <BrainCircuit className="h-5 w-5 mr-2 text-blue-600" />
+                                                    )}
                                                     No Widgets Available
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    This file doesn't have any widgets yet. Generate AI insights to create widgets for this file.
+                                                    {dataType === 'raw'
+                                                        ? 'This file doesn\'t have any widgets yet. Create widgets manually to analyze your data.'
+                                                        : 'This file doesn\'t have any widgets yet. Generate AI insights to create widgets for this file.'
+                                                    }
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="text-center py-8">
                                                     <div className="mb-4">
-                                                        <BrainCircuit className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                                        {dataType === 'raw' ? (
+                                                            <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                                        ) : (
+                                                            <BrainCircuit className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                                        )}
                                                         <h3 className="text-lg font-medium text-gray-900 mb-2">
                                                             No Widgets Found
                                                         </h3>
                                                         <p className="text-gray-600 mb-6">
-                                                            This file hasn't been analyzed with AI yet. Generate insights to create widgets based on your data.
+                                                            {dataType === 'raw'
+                                                                ? 'Create widgets manually by selecting columns and operations from your data.'
+                                                                : 'This file hasn\'t been analyzed with AI yet. Generate insights to create widgets based on your data.'
+                                                            }
                                                         </p>
                                                     </div>
-                                                    <Button
-                                                        onClick={() => analyzeFileWithAI(selectedFile)}
-                                                        disabled={isGeneratingInsights}
-                                                        className="bg-blue-600 hover:bg-blue-700"
-                                                    >
-                                                        {isGeneratingInsights ? (
-                                                            <>
-                                                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                                                Generating Insights...
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Sparkles className="h-4 w-4 mr-2" />
-                                                                Generate Insights
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    {dataType === 'raw' ? (
+                                                        <div className="space-y-3">
+                                                            <Button
+                                                                onClick={() => {
+                                                                    if (selectedFile) {
+                                                                        window.location.href = `/create-widget/${selectedFile.id}/kpi`;
+                                                                    }
+                                                                }}
+                                                                className="bg-blue-600 hover:bg-blue-700 mr-3"
+                                                            >
+                                                                <Plus className="h-4 w-4 mr-2" />
+                                                                Create KPI Widget
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => {
+                                                                    if (selectedFile) {
+                                                                        window.location.href = `/create-widget/${selectedFile.id}/chart`;
+                                                                    }
+                                                                }}
+                                                                variant="outline"
+                                                            >
+                                                                <BarChart3 className="h-4 w-4 mr-2" />
+                                                                Create Chart Widget
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <Button
+                                                            onClick={() => analyzeFileWithAI(selectedFile)}
+                                                            disabled={isGeneratingInsights}
+                                                            className="bg-blue-600 hover:bg-blue-700"
+                                                        >
+                                                            {isGeneratingInsights ? (
+                                                                <>
+                                                                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                                                    Generating Insights...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Sparkles className="h-4 w-4 mr-2" />
+                                                                    Generate Insights
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -672,38 +713,38 @@ export default function WidgetSelection({
                                                 </Card>
                                             )}
 
-                                            {/* Chart Widgets */}
-                                            {chartWidgets.length > 0 && (
-                                                <Card>
-                                                    <CardHeader>
-                                                        <CardTitle className="flex items-center justify-between">
-                                                            <div className="flex items-center">
-                                                                <BarChart3 className="h-5 w-5 mr-2" />
-                                                                Chart Widgets
-                                                            </div>
-                                                            <div className="flex items-center space-x-2">
-                                                                <Badge variant="outline" className="text-blue-600 border-blue-200">
-                                                                    {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'bar_chart' || widgets.find(w => w.id === id)?.widget_type === 'pie_chart').length}/2 Selected
-                                                                </Badge>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    onClick={() => {
-                                                                        if (selectedFile) {
-                                                                            window.location.href = `/create-widget/${selectedFile.id}/chart`;
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <Plus className="h-4 w-4 mr-1" />
-                                                                    Add Chart
-                                                                </Button>
-                                                            </div>
-                                                        </CardTitle>
-                                                        <CardDescription>
-                                                            Select up to 2 chart widgets to display on your dashboard
-                                                        </CardDescription>
-                                                    </CardHeader>
-                                                    <CardContent>
+                                                                                        {/* Chart Widgets */}
+                                            <Card>
+                                                <CardHeader>
+                                                    <CardTitle className="flex items-center justify-between">
+                                                        <div className="flex items-center">
+                                                            <BarChart3 className="h-5 w-5 mr-2" />
+                                                            Chart Widgets
+                                                        </div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                                                {displayedWidgetIds.filter(id => widgets.find(w => w.id === id)?.widget_type === 'bar_chart' || widgets.find(w => w.id === id)?.widget_type === 'pie_chart').length}/2 Selected
+                                                            </Badge>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    if (selectedFile) {
+                                                                        window.location.href = `/create-widget/${selectedFile.id}/chart`;
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <Plus className="h-4 w-4 mr-1" />
+                                                                Add Chart
+                                                            </Button>
+                                                        </div>
+                                                    </CardTitle>
+                                                    <CardDescription>
+                                                        Select up to 2 chart widgets to display on your dashboard
+                                                    </CardDescription>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    {chartWidgets.length > 0 ? (
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             {chartWidgets.map((widget) => {
                                                                 const isSelected = displayedWidgetIds.includes(widget.id);
@@ -761,9 +802,30 @@ export default function WidgetSelection({
                                                                 );
                                                             })}
                                                         </div>
-                                                    </CardContent>
-                                                </Card>
-                                            )}
+                                                    ) : (
+                                                        <div className="text-center py-8">
+                                                            <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                                                No Chart Widgets
+                                                            </h3>
+                                                            <p className="text-gray-600 mb-6">
+                                                                Create chart widgets to visualize your data
+                                                            </p>
+                                                            <Button
+                                                                onClick={() => {
+                                                                    if (selectedFile) {
+                                                                        window.location.href = `/create-widget/${selectedFile.id}/chart`;
+                                                                    }
+                                                                }}
+                                                                className="bg-blue-600 hover:bg-blue-700"
+                                                            >
+                                                                <Plus className="h-4 w-4 mr-2" />
+                                                                Create Chart Widget
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
 
                                             {/* Table Widgets */}
                                             {tableWidgets.length > 0 && (
