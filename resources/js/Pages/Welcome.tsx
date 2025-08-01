@@ -3,8 +3,11 @@ import { Head, Link } from '@inertiajs/react'
 import { Button } from "@/components/ui/button"
 import { Settings, ShieldCheck, Package, Puzzle, Upload, BarChart3, Calculator, Brain, Building2, ShoppingCart, Factory, GraduationCap, Heart, FileSpreadsheet, ArrowRight, Users, TrendingUp, Lock, Target, Wrench, Sparkles } from "lucide-react"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
+import { DemoRequestModal } from "@/components/ui/demo-request-modal"
+import { useState } from "react"
 
 export default function WelcomePage() {
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false)
   const heroRef = useIntersectionObserver({ threshold: 0.3 })
   const featuresRef = useIntersectionObserver({ threshold: 0.2 })
   const dashboardRef = useIntersectionObserver({ threshold: 0.3 })
@@ -107,7 +110,12 @@ export default function WelcomePage() {
                     Try Xcel Dashboard Now
                   </Button>
                 </Link>
-                <Button variant="outline" size="lg" className="px-8 py-3 bg-transparent transition-transform hover:scale-105">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="px-8 py-3 bg-transparent transition-transform hover:scale-105"
+                  onClick={() => setIsDemoModalOpen(true)}
+                >
                   Request a Demo
                 </Button>
               </div>
@@ -525,6 +533,12 @@ export default function WelcomePage() {
           </section>
         </div>
       </div>
+
+      {/* Demo Request Modal */}
+      <DemoRequestModal
+        isOpen={isDemoModalOpen}
+        onClose={() => setIsDemoModalOpen(false)}
+      />
 
       {/* Footer */}
       <footer className="bg-white">

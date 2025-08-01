@@ -84,6 +84,9 @@ Route::get('/privacy-policy', function () {
     return Inertia::render('TermsOfService');
 })->name('privacy-policy');
 
+// Demo Request Route
+Route::post('/demo-request', [App\Http\Controllers\DemoRequestController::class, 'store'])->name('demo-request.store');
+
 // About Route (public)
 Route::get('/about', function () {
     return Inertia::render('About');
