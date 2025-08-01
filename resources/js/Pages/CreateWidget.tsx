@@ -176,7 +176,8 @@ export default function CreateWidget({ file, widgetType, dataType }: CreateWidge
                         title: 'AI Widget Created!',
                         description: `Widget "${data.widget_name || widgetName}" has been created successfully.`,
                     });
-                    window.history.back();
+                    // Redirect to widget selection page to see the new widget
+                    window.location.href = '/widget-selection';
                 } else {
                     throw new Error(data.message || 'Failed to create widget');
                 }
@@ -205,7 +206,8 @@ export default function CreateWidget({ file, widgetType, dataType }: CreateWidge
                         title: 'Widget Created!',
                         description: `Widget "${data.widget_name}" has been created successfully.`,
                     });
-                    window.history.back();
+                    // Redirect to widget selection page to see the new widget
+                    window.location.href = '/widget-selection';
                 } else {
                     throw new Error(data.message || 'Failed to create widget');
                 }
@@ -236,7 +238,7 @@ export default function CreateWidget({ file, widgetType, dataType }: CreateWidge
                     <div className="flex justify-end">
                         <Button
                             variant="outline"
-                            onClick={() => window.history.back()}
+                            onClick={() => window.location.href = '/widget-selection'}
                         >
                             <ArrowLeft className="h-4 w-4 mr-2" />
                             Back to Widget Selection
